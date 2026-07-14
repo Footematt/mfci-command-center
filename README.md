@@ -10,7 +10,7 @@ This app is currently a static installable web app. Firebase Hosting is designed
 
 - `public/` — the app files
 - `firebase.json` — Firebase Hosting configuration
-- `.firebaserc` — Firebase project ID placeholder
+- mfci-command-center — Firebase project ID placeholder
 - `package.json` — optional Firebase CLI commands
 
 ## Deploy from a phone using GitHub and Firebase
