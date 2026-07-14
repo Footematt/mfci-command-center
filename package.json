@@ -1,0 +1,13 @@
+{
+  "name": "mfci-command-center",
+  "version": "3.0.0",
+  "private": true,
+  "description": "MFCI Command Center phone-first business operations app",
+  "scripts": {
+    "serve": "firebase emulators:start --only hosting",
+    "deploy": "firebase deploy --only hosting"
+  },
+  "devDependencies": {
+    "firebase-tools": "^14.0.0"
+  }
+}

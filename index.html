@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#173c2a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MFCI">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<title>MFCI Command Center</title>
+<style>
+:root{--g:#315f3f;--gd:#173c2a;--paper:#f4f7f3;--ink:#132017;--muted:#68736a;--line:#dfe7df;--red:#a63838;--amber:#8a641b;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);padding-bottom:env(safe-area-inset-bottom)}
+button,input,select,textarea{font:inherit}button{cursor:pointer}
+header{position:sticky;top:0;z-index:20;background:var(--gd);color:white;padding:calc(14px + env(safe-area-inset-top)) 14px 14px}
+.head{display:flex;justify-content:space-between;align-items:center;gap:10px;max-width:1050px;margin:auto}
+.brand{font-weight:900;font-size:1.08rem}.sub{font-size:.7rem;opacity:.72}.mode{font-size:.65rem;border:1px solid #607d69;border-radius:999px;padding:6px 8px}
+main{max-width:1050px;margin:auto;padding:13px 12px 105px}.page{display:none}.page.active{display:block}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:30;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(7,1fr);padding-bottom:env(safe-area-inset-bottom)}
+nav button{border:0;background:#fff;padding:11px 2px;color:#5f6a61;font-size:.62rem}nav button.active{background:#edf5e9;color:var(--gd);font-weight:900}
+.grid{display:grid;gap:10px}.stats{grid-template-columns:repeat(2,1fr)}.card{background:#fff;border:1px solid var(--line);border-radius:15px;padding:14px;box-shadow:0 7px 18px rgba(20,40,25,.04)}
+.label{font-size:.72rem;color:var(--muted)}.value{font-size:1.28rem;font-weight:900;margin-top:4px}
+h2{font-size:1.07rem;margin:0 0 5px}h3{font-size:.96rem;margin:0 0 5px}p{color:var(--muted);line-height:1.42;margin:5px 0}
+.section{display:flex;justify-content:space-between;align-items:end;gap:9px;margin:19px 2px 9px}.primary,.secondary,.danger{border:0;border-radius:10px;padding:10px 12px;font-weight:800}
+.primary{background:var(--g);color:#fff}.secondary{background:#e9f0e7;color:var(--gd)}.danger{background:var(--red);color:#fff}
+.form{display:grid;gap:9px}.field{display:grid;gap:4px}.field label{font-size:.73rem;color:var(--muted)}
+input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;background:#fff;padding:11px}textarea{min-height:82px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.list{display:grid;gap:9px}.item{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.amount{font-weight:900;white-space:nowrap}
+.status{display:inline-block;margin-top:5px;padding:4px 7px;border-radius:999px;font-size:.66rem;background:#eef2ee}.status.overdue{background:#ffe6e6;color:#8a2f2f}.status.partial{background:#fff0d4;color:#7a5615}.status.paid{background:#e4f4dc;color:#2f6d2f}
+.notice{padding:11px;border-radius:11px;font-size:.76rem;background:#fff6d8;border:1px solid #ead683;color:#66571f}.hidden{display:none}.empty{text-align:center;color:var(--muted);padding:20px}
+.syncdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#e4b94a;margin-right:5px}.syncdot.live{background:#75d56b}.syncdot.off{background:#d86e6e}
+@media(min-width:760px){.stats{grid-template-columns:repeat(4,1fr)}.two{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header><div class="head"><div><div class="brand">MFCI COMMAND CENTER</div><div class="sub">Android + iPhone shared workspace</div></div><div class="mode"><span id="syncDot" class="syncdot"></span><span id="syncText">LOCAL</span></div></div></header>
+
+<main>
+<section id="home" class="page active">
+<div class="grid stats">
+<div class="card"><div class="label">Accounts receivable</div><div class="value" id="sAR">$0.00</div></div>
+<div class="card"><div class="label">Overdue</div><div class="value" id="sOD">$0.00</div></div>
+<div class="card"><div class="label">HST collected</div><div class="value" id="sHST">$0.00</div></div>
+<div class="card"><div class="label">Active jobs</div><div class="value" id="sJobs">0</div></div>
+</div>
+<div class="section"><div><h2>Priority queue</h2><p>Items requiring attention.</p></div></div>
+<div id="priority" class="list"></div>
+<div class="section"><h2>Quick actions</h2></div>
+<div class="grid two">
+<button class="primary" onclick="go('invoices');show('invoiceForm')">Create invoice</button>
+<button class="secondary" onclick="go('customers');show('customerForm')">Add customer</button>
+<button class="secondary" onclick="go('jobs');show('jobForm')">Add job</button>
+<button class="secondary" onclick="go('expenses');show('expenseForm')">Add expense</button>
+<button class="secondary" onclick="go('documents')">Create document</button>
+</div>
+</section>
+
+<section id="customers" class="page">
+<div class="section"><div><h2>Customers</h2><p>Shared contacts and billing details.</p></div><button class="primary" onclick="show('customerForm')">New</button></div>
+<div id="customerForm" class="card form hidden">
+<div class="field"><label>Name</label><input id="cName"></div>
+<div class="row"><div class="field"><label>Contact</label><input id="cContact"></div><div class="field"><label>Phone</label><input id="cPhone"></div></div>
+<div class="field"><label>Email</label><input id="cEmail"></div>
+<div class="field"><label>Billing address</label><textarea id="cAddress"></textarea></div>
+<div class="actions"><button class="primary" onclick="saveCustomer()">Save</button><button class="secondary" onclick="hide('customerForm')">Cancel</button></div>
+</div>
+<div id="customerList" class="list" style="margin-top:9px"></div>
+</section>
+
+<section id="invoices" class="page">
+<div class="section"><div><h2>Invoices</h2><p>HST, partial payments, and balances.</p></div><button class="primary" onclick="show('invoiceForm')">New</button></div>
+<div id="invoiceForm" class="card form hidden">
+<div class="row"><div class="field"><label>Invoice #</label><input id="iNumber"></div><div class="field"><label>Customer</label><input id="iCustomer"></div></div>
+<div class="field"><label>Property / project</label><input id="iProperty"></div>
+<div class="row"><div class="field"><label>Subtotal</label><input id="iSubtotal" type="number" step="0.01"></div><div class="field"><label>HST %</label><input id="iHstRate" type="number" value="13"></div></div>
+<div class="row"><div class="field"><label>Invoice date</label><input id="iDate" type="date"></div><div class="field"><label>Due date</label><input id="iDue" type="date"></div></div>
+<div class="field"><label>Description</label><textarea id="iNotes"></textarea></div>
+<div class="actions"><button class="primary" onclick="saveInvoice()">Save</button><button class="secondary" onclick="hide('invoiceForm')">Cancel</button></div>
+</div>
+<div id="invoiceList" class="list" style="margin-top:9px"></div>
+</section>
+
+<section id="jobs" class="page">
+<div class="section"><div><h2>Jobs</h2><p>Scope, address, status, and notes.</p></div><button class="primary" onclick="show('jobForm')">New</button></div>
+<div id="jobForm" class="card form hidden">
+<div class="field"><label>Job name</label><input id="jName"></div>
+<div class="field"><label>Customer</label><input id="jCustomer"></div>
+<div class="field"><label>Address</label><input id="jAddress"></div>
+<div class="row"><div class="field"><label>Start</label><input id="jStart" type="date"></div><div class="field"><label>Status</label><select id="jStatus"><option>Active</option><option>Quoted</option><option>Completed</option><option>On hold</option></select></div></div>
+<div class="field"><label>Scope / notes</label><textarea id="jNotes"></textarea></div>
+<div class="actions"><button class="primary" onclick="saveJob()">Save</button><button class="secondary" onclick="hide('jobForm')">Cancel</button></div>
+</div>
+<div id="jobList" class="list" style="margin-top:9px"></div>
+</section>
+
+<section id="expenses" class="page">
+<div class="section"><div><h2>Expenses</h2><p>Materials, fuel, tools, and receipts.</p></div><button class="primary" onclick="show('expenseForm')">New</button></div>
+<div id="expenseForm" class="card form hidden">
+<div class="row"><div class="field"><label>Amount</label><input id="eAmount" type="number" step="0.01"></div><div class="field"><label>Date</label><input id="eDate" type="date"></div></div>
+<div class="field"><label>Category</label><select id="eCategory"><option>Materials</option><option>Fuel</option><option>Tools</option><option>Subcontractor</option><option>Vehicle</option><option>Office</option><option>Other</option></select></div>
+<div class="field"><label>Job / property</label><input id="eJob"></div>
+<div class="field"><label>Description</label><textarea id="eNotes"></textarea></div>
+<div class="actions"><button class="primary" onclick="saveExpense()">Save</button><button class="secondary" onclick="hide('expenseForm')">Cancel</button></div>
+</div>
+<div id="expenseList" class="list" style="margin-top:9px"></div>
+</section>
+
+
+<section id="documents" class="page">
+<div class="section"><div><h2>Documents & signatures</h2><p>Fill, sign, save, and print standardized MFCI forms.</p></div><button class="primary" onclick="newDocument()">New</button></div>
+<div class="notice">Template wording is a practical starting point, not legal advice. Ontario restricts non-compete agreements in employment settings. This build emphasizes confidentiality and narrowly framed non-solicitation terms; have your lawyer review before operational use.</div>
+
+<div id="documentForm" class="card form" style="margin-top:10px">
+<div class="field"><label>Template</label>
+<select id="dTemplate" onchange="loadTemplateFields()">
+<option value="subcontractor">Independent Subcontractor Agreement</option>
+<option value="confidentiality">Confidentiality & Non-Solicitation Agreement</option>
+<option value="completion">Customer Completion & Work Acceptance</option>
+<option value="insurance">Insurance Claim Authorization to Proceed</option>
+<option value="changeorder">Change Order</option>
+<option value="warranty">Warranty Acknowledgment</option>
+</select></div>
+<div class="row"><div class="field"><label>Party / customer name</label><input id="dParty"></div><div class="field"><label>Company</label><input id="dCompany"></div></div>
+<div class="field"><label>Project / property</label><input id="dProject"></div>
+<div class="row"><div class="field"><label>Date</label><input id="dDate" type="date"></div><div class="field"><label>Amount / rate</label><input id="dAmount"></div></div>
+<div class="field"><label>Scope / special terms</label><textarea id="dScope"></textarea></div>
+<div class="field"><label>Additional notes</label><textarea id="dNotes"></textarea></div>
+<div class="field"><label>Signer name</label><input id="dSigner"></div>
+<div class="field"><label>Signature</label>
+<canvas id="signaturePad" width="700" height="220" style="width:100%;height:150px;border:1px solid #ccd8cd;border-radius:10px;background:white;touch-action:none"></canvas>
+</div>
+<div class="actions"><button class="secondary" onclick="clearSignature()">Clear signature</button><button class="primary" onclick="saveDocument()">Save document</button><button class="secondary" onclick="previewDocument()">Preview / Print</button></div>
+</div>
+
+<div class="section"><div><h2>Saved documents</h2><p>Stored locally and synchronized when cloud sync is enabled.</p></div></div>
+<div id="documentList" class="list"></div>
+</section>
+
+<section id="more" class="page">
+<div class="section"><div><h2>Sync and backup</h2><p>Use one shared company code on both phones.</p></div></div>
+<div class="notice">Real-time sync requires a Firebase project. Until configured, the app safely works in local-only mode.</div>
+<div class="card form" style="margin-top:10px">
+<h3>Company workspace</h3>
+<div class="field"><label>Company code</label><input id="companyCode" value="mfci-main"></div>
+<div class="field"><label>Firebase configuration JSON</label><textarea id="firebaseConfig" placeholder='Paste Firebase web app config JSON here'></textarea></div>
+<div class="actions"><button class="primary" onclick="enableSync()">Enable live sync</button><button class="secondary" onclick="disableSync()">Use local only</button></div>
+</div>
+<div class="card" style="margin-top:10px">
+<h3>Backup</h3><p>Export a full copy before changing devices.</p>
+<div class="actions"><button class="secondary" onclick="exportBackup()">Export backup</button><label class="secondary">Import backup<input type="file" accept=".json" onchange="importBackup(event)" style="display:none"></label></div>
+</div>
+<div class="card" style="margin-top:10px">
+<h3>TradePilot</h3><p>Paper mode only. Broker connection remains disabled until secure server setup.</p>
+</div>
+</section>
+</main>
+
+<nav>
+<button class="active" onclick="go('home',this)">Home</button>
+<button onclick="go('customers',this)">Customers</button>
+<button onclick="go('invoices',this)">Invoices</button>
+<button onclick="go('jobs',this)">Jobs</button>
+<button onclick="go('expenses',this)">Expenses</button>
+<button onclick="go('documents',this)">Docs</button>
+<button onclick="go('more',this)">More</button>
+</nav>
+
+<script type="module">
+let db=JSON.parse(localStorage.getItem("mfci_sync_db")||"null")||{customers:[],invoices:[],jobs:[],expenses:[],documents:[]};
+let cloud=null,unsub=null;
+const $=id=>document.getElementById(id),money=n=>new Intl.NumberFormat("en-CA",{style:"currency",currency:"CAD"}).format(Number(n||0)),today=()=>new Date().toISOString().slice(0,10);
+window.show=id=>$(id).classList.remove("hidden");window.hide=id=>$(id).classList.add("hidden");
+window.go=(id,btn)=>{document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));$(id).classList.add("active");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));if(btn)btn.classList.add("active");window.scrollTo(0,0);render()};
+async function persist(){
+ localStorage.setItem("mfci_sync_db",JSON.stringify(db));
+ render();
+ if(cloud){await cloud.set(db)}
+}
+window.saveCustomer=async()=>{if(!cName.value.trim())return alert("Enter a customer name.");db.customers.push({id:crypto.randomUUID(),name:cName.value.trim(),contact:cContact.value.trim(),phone:cPhone.value.trim(),email:cEmail.value.trim(),address:cAddress.value.trim()});["cName","cContact","cPhone","cEmail","cAddress"].forEach(x=>$(x).value="");hide("customerForm");await persist()};
+window.saveInvoice=async()=>{let sub=Number(iSubtotal.value);if(!iNumber.value.trim()||!sub)return alert("Enter invoice number and subtotal.");let rate=Number(iHstRate.value||0),hst=sub*rate/100,total=sub+hst;db.invoices.push({id:crypto.randomUUID(),number:iNumber.value.trim(),customer:iCustomer.value.trim(),property:iProperty.value.trim(),subtotal:sub,hstRate:rate,hst,total,paid:0,date:iDate.value,due:iDue.value,notes:iNotes.value.trim()});["iNumber","iCustomer","iProperty","iSubtotal","iNotes"].forEach(x=>$(x).value="");hide("invoiceForm");await persist()};
+window.saveJob=async()=>{if(!jName.value.trim())return alert("Enter a job name.");db.jobs.push({id:crypto.randomUUID(),name:jName.value.trim(),customer:jCustomer.value.trim(),address:jAddress.value.trim(),start:jStart.value,status:jStatus.value,notes:jNotes.value.trim()});["jName","jCustomer","jAddress","jNotes"].forEach(x=>$(x).value="");hide("jobForm");await persist()};
+window.saveExpense=async()=>{let amount=Number(eAmount.value);if(!amount)return alert("Enter an amount.");db.expenses.push({id:crypto.randomUUID(),amount,date:eDate.value,category:eCategory.value,job:eJob.value.trim(),notes:eNotes.value.trim()});["eAmount","eJob","eNotes"].forEach(x=>$(x).value="");hide("expenseForm");await persist()};
+window.addPayment=async id=>{let x=db.invoices.find(i=>i.id===id),v=Number(prompt("Payment amount:","0"));if(v>0){x.paid=Math.min(x.total,x.paid+v);await persist()}};
+window.delItem=async(type,id)=>{if(confirm("Delete this item?")){db[type]=db[type].filter(x=>x.id!==id);await persist()}};
+
+const templates={
+subcontractor:{
+ title:"INDEPENDENT SUBCONTRACTOR AGREEMENT",
+ body:(x)=>`
+<p>This agreement is between MFCI Contracting Inc. ("MFCI") and <b>${esc(x.party)}</b>${x.company?`, operating as <b>${esc(x.company)}</b>`:""}.</p>
+<h3>1. Independent relationship</h3><p>The subcontractor performs services as an independent business and is responsible for its own taxes, insurance, tools, licences, permits, workers, and statutory obligations. Nothing creates employment, partnership, or agency.</p>
+<h3>2. Services and payment</h3><p>Project: <b>${esc(x.project)}</b>. Compensation/rate: <b>${esc(x.amount)}</b>. Scope: ${esc(x.scope)}</p>
+<h3>3. Standards and records</h3><p>The subcontractor will perform work professionally, comply with applicable laws and site rules, protect the property, report deficiencies promptly, and provide invoices, time records, receipts, photographs, insurance and WSIB documentation when requested.</p>
+<h3>4. Changes</h3><p>No extra work is payable unless authorized by MFCI in writing or electronically.</p>
+<h3>5. Confidentiality and customer protection</h3><p>The subcontractor will keep customer, pricing, estimating, supplier, project and business information confidential and will not use it except to complete assigned work.</p>
+<h3>6. Non-solicitation</h3><p>During the engagement and for 12 months afterward, the subcontractor will not directly solicit customers first introduced through MFCI for competing work arising from the same relationship, except with MFCI's written consent. This clause is intended to protect customer relationships without preventing lawful competition.</p>
+<h3>7. Insurance, safety and indemnity</h3><p>The subcontractor must maintain appropriate liability insurance and WSIB status or independent-operator documentation, follow safety requirements, and be responsible for loss caused by its negligence or wilful misconduct, subject to applicable law.</p>
+<h3>8. Termination</h3><p>Either party may end future assignments. Accrued payment obligations and confidentiality provisions survive.</p>
+<p>${esc(x.notes)}</p>`
+},
+confidentiality:{
+ title:"CONFIDENTIALITY & NON-SOLICITATION AGREEMENT",
+ body:(x)=>`
+<p>Between MFCI Contracting Inc. and <b>${esc(x.party)}</b>${x.company?` of <b>${esc(x.company)}</b>`:""}.</p>
+<p>The receiving party will protect confidential information including customer lists, pricing, estimates, job records, supplier terms, photographs, plans, access codes and business methods. Information may be used only for authorized MFCI work and must not be copied, disclosed or retained unnecessarily.</p>
+<p>For 12 months after the last MFCI assignment, the receiving party will not directly solicit a customer first introduced through MFCI for competing work connected to that relationship, except with written consent. General advertising not specifically directed at that customer is not prohibited.</p>
+<p>Project/context: ${esc(x.project)}. Special terms: ${esc(x.scope)}. ${esc(x.notes)}</p>`
+},
+completion:{
+ title:"CUSTOMER COMPLETION & WORK ACCEPTANCE",
+ body:(x)=>`
+<p>Customer: <b>${esc(x.party)}</b>. Project/property: <b>${esc(x.project)}</b>.</p>
+<p>The customer confirms that a final walk-through was offered and that the work described below has been reviewed:</p>
+<p>${esc(x.scope)}</p>
+<p>Customer selection:</p>
+<p>☐ Work accepted as complete. &nbsp; ☐ Accepted subject to the following deficiencies/punch-list items:</p>
+<p>${esc(x.notes)}</p>
+<p>This acknowledgment records visible completion and does not waive statutory rights, concealed-defect rights, manufacturer warranties, or written MFCI warranty obligations.</p>`
+},
+insurance:{
+ title:"INSURANCE CLAIM AUTHORIZATION TO PROCEED",
+ body:(x)=>`
+<p>Insured/customer: <b>${esc(x.party)}</b>. Loss location: <b>${esc(x.project)}</b>.</p>
+<p>The customer authorizes MFCI Contracting Inc. to perform the following mitigation, repair or restoration work:</p>
+<p>${esc(x.scope)}</p>
+<p>Estimated/customer-authorized amount or pricing basis: <b>${esc(x.amount)}</b>.</p>
+<p>The customer understands that insurer approval and insurance proceeds are separate from the customer's contractual responsibility for authorized work, deductibles, upgrades, exclusions and amounts not paid by the insurer, subject to the written contract and applicable law.</p>
+<p>MFCI may communicate project documents, estimates, photographs and invoices to the insurer, adjuster and other authorized participants for claim administration. Special instructions: ${esc(x.notes)}</p>`
+},
+changeorder:{
+ title:"CHANGE ORDER",
+ body:(x)=>`
+<p>Customer: <b>${esc(x.party)}</b>. Project: <b>${esc(x.project)}</b>.</p>
+<p>Requested change:</p><p>${esc(x.scope)}</p>
+<p>Price adjustment: <b>${esc(x.amount)}</b>.</p>
+<p>Schedule effect / other terms: ${esc(x.notes)}</p>
+<p>The customer authorizes MFCI to proceed with this change. Unless stated otherwise, the original agreement remains in force.</p>`
+},
+warranty:{
+ title:"WARRANTY ACKNOWLEDGMENT",
+ body:(x)=>`
+<p>Customer: <b>${esc(x.party)}</b>. Project/property: <b>${esc(x.project)}</b>.</p>
+<p>Covered work: ${esc(x.scope)}</p>
+<p>Warranty period/terms: <b>${esc(x.amount)}</b>.</p>
+<p>The warranty excludes normal wear, owner-supplied materials, misuse, lack of maintenance, movement or failure of existing structures, water intrusion from unrelated sources, manufacturer exclusions, and work altered by others, unless prohibited by law.</p>
+<p>Warranty instructions and noted conditions: ${esc(x.notes)}</p>`
+}
+};
+function esc(v){return String(v||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m])).replace(/\n/g,"<br>")}
+let sigDrawing=false,sigCtx=null;
+function setupSignature(){
+ const c=document.getElementById("signaturePad");if(!c)return;sigCtx=c.getContext("2d");sigCtx.lineWidth=3;sigCtx.lineCap="round";sigCtx.strokeStyle="#17211a";
+ const pos=e=>{const r=c.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*c.width/r.width,y:(t.clientY-r.top)*c.height/r.height}};
+ const start=e=>{e.preventDefault();sigDrawing=true;let q=pos(e);sigCtx.beginPath();sigCtx.moveTo(q.x,q.y)};
+ const move=e=>{if(!sigDrawing)return;e.preventDefault();let q=pos(e);sigCtx.lineTo(q.x,q.y);sigCtx.stroke()};
+ const end=()=>sigDrawing=false;
+ c.addEventListener("pointerdown",start);c.addEventListener("pointermove",move);c.addEventListener("pointerup",end);c.addEventListener("pointerleave",end);
+ c.addEventListener("touchstart",start,{passive:false});c.addEventListener("touchmove",move,{passive:false});c.addEventListener("touchend",end);
+}
+window.clearSignature=()=>{const c=document.getElementById("signaturePad");c.getContext("2d").clearRect(0,0,c.width,c.height)};
+function docValues(){return{template:dTemplate.value,party:dParty.value.trim(),company:dCompany.value.trim(),project:dProject.value.trim(),date:dDate.value||today(),amount:dAmount.value.trim(),scope:dScope.value.trim(),notes:dNotes.value.trim(),signer:dSigner.value.trim(),signature:signaturePad.toDataURL("image/png")}}
+window.newDocument=()=>{["dParty","dCompany","dProject","dAmount","dScope","dNotes","dSigner"].forEach(x=>$(x).value="");dDate.value=today();clearSignature();window.scrollTo(0,0)}
+window.loadTemplateFields=()=>{};
+window.saveDocument=async()=>{let x=docValues();if(!x.party)return alert("Enter the party or customer name.");db.documents=db.documents||[];db.documents.push({...x,id:crypto.randomUUID(),created:new Date().toISOString()});await persist();alert("Document saved.")};
+function docHTML(x){
+ const t=templates[x.template]||templates.completion;
+ return `<!doctype html><html><head><meta charset="utf-8"><title>${t.title}</title><style>body{font-family:Arial,sans-serif;max-width:800px;margin:35px auto;color:#111;line-height:1.45;padding:0 24px}h1{font-size:22px;text-align:center}h3{font-size:15px;margin-bottom:2px}p{margin:9px 0}.sig{margin-top:35px;display:grid;grid-template-columns:1fr 1fr;gap:30px}.line{border-top:1px solid #111;padding-top:5px}.signature{max-height:75px;max-width:280px}@media print{button{display:none}}</style></head><body><h1>${t.title}</h1><p><b>Date:</b> ${esc(x.date)}</p>${t.body(x)}<div class="sig"><div>${x.signature?`<img class="signature" src="${x.signature}">`:""}<div class="line">${esc(x.signer||x.party)}<br>Party signature</div></div><div><div style="height:75px"></div><div class="line">MFCI Contracting Inc.<br>Authorized signature</div></div></div><p style="margin-top:30px;font-size:11px">Generated by MFCI Command Center. Retain a completed copy with the project record.</p><button onclick="window.print()">Print / Save PDF</button></body></html>`;
+}
+window.previewDocument=()=>{let w=window.open("","_blank");w.document.write(docHTML(docValues()));w.document.close()};
+window.printSavedDocument=id=>{let x=(db.documents||[]).find(d=>d.id===id),w=window.open("","_blank");w.document.write(docHTML(x));w.document.close()};
+
+function render(){
+ let ar=db.invoices.reduce((s,i)=>s+Math.max(0,i.total-i.paid),0),od=db.invoices.filter(i=>i.due&&i.due<today()&&i.paid<i.total).reduce((s,i)=>s+i.total-i.paid,0),hst=db.invoices.reduce((s,i)=>s+i.hst,0),jobs=db.jobs.filter(j=>j.status==="Active").length;
+ sAR.textContent=money(ar);sOD.textContent=money(od);sHST.textContent=money(hst);sJobs.textContent=jobs;
+ priority.innerHTML="";let urgent=db.invoices.filter(i=>i.due&&i.due<today()&&i.paid<i.total);if(!urgent.length)priority.innerHTML='<div class="card empty">Nothing urgent.</div>';urgent.forEach(i=>priority.innerHTML+=`<div class="card item"><div><b>Invoice ${i.number} overdue</b><br><small>${i.customer}</small></div><div class="amount">${money(i.total-i.paid)}</div></div>`);
+ customerList.innerHTML=db.customers.length?"":'<div class="card empty">No customers yet.</div>';db.customers.forEach(c=>customerList.innerHTML+=`<div class="card item"><div><b>${c.name}</b><br><small>${c.contact||""} ${c.phone||""}</small><p>${c.email||""}<br>${c.address||""}</p><button class="danger" onclick="delItem('customers','${c.id}')">Delete</button></div></div>`);
+ invoiceList.innerHTML=db.invoices.length?"":'<div class="card empty">No invoices yet.</div>';db.invoices.forEach(i=>{let bal=i.total-i.paid,cls=bal<=0?"paid":i.paid>0?"partial":(i.due&&i.due<today()?"overdue":"");invoiceList.innerHTML+=`<div class="card item"><div><b>Invoice ${i.number}</b><br><small>${i.customer}${i.property?" · "+i.property:""}</small><div class="status ${cls}">${bal<=0?"Paid":i.paid>0?"Partial":"Unpaid"}</div><p>${i.notes||""}</p><div class="actions">${bal>0?`<button class="secondary" onclick="addPayment('${i.id}')">Add payment</button>`:""}<button class="danger" onclick="delItem('invoices','${i.id}')">Delete</button></div></div><div class="amount">${money(bal)}<br><small>Total ${money(i.total)}</small></div></div>`});
+ jobList.innerHTML=db.jobs.length?"":'<div class="card empty">No jobs yet.</div>';db.jobs.forEach(j=>jobList.innerHTML+=`<div class="card item"><div><b>${j.name}</b><br><small>${j.customer}${j.address?" · "+j.address:""}</small><div class="status">${j.status}</div><p>${j.notes||""}</p><button class="danger" onclick="delItem('jobs','${j.id}')">Delete</button></div></div>`);
+ expenseList.innerHTML=db.expenses.length?"":'<div class="card empty">No expenses yet.</div>';db.expenses.forEach(e=>expenseList.innerHTML+=`<div class="card item"><div><b>${e.category}</b><br><small>${e.date||""}${e.job?" · "+e.job:""}</small><p>${e.notes||""}</p><button class="danger" onclick="delItem('expenses','${e.id}')">Delete</button></div><div class="amount">${money(e.amount)}</div></div>`);
+ documentList.innerHTML=(db.documents&&db.documents.length)?"":'<div class="card empty">No saved documents yet.</div>';
+ (db.documents||[]).forEach(d=>{let t=templates[d.template]||templates.completion;documentList.innerHTML+=`<div class="card item"><div><b>${t.title}</b><br><small>${d.party}${d.project?" · "+d.project:""}</small><p>${d.date||""}</p><div class="actions"><button class="secondary" onclick="printSavedDocument('${d.id}')">Open / Print</button><button class="danger" onclick="delItem('documents','${d.id}')">Delete</button></div></div></div>`});
+
+}
+window.enableSync=async()=>{
+ try{
+  let cfg=JSON.parse(firebaseConfig.value.trim()),code=companyCode.value.trim();
+  if(!code)throw new Error("Enter a company code.");
+  const {initializeApp}=await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js");
+  const {getDatabase,ref,onValue,set}=await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js");
+  const app=initializeApp(cfg),r=ref(getDatabase(app),"workspaces/"+code);
+  cloud={set:data=>set(r,data)};
+  if(unsub)unsub();
+  unsub=onValue(r,s=>{if(s.exists()){db=s.val();localStorage.setItem("mfci_sync_db",JSON.stringify(db));render()}else{cloud.set(db)}});
+  localStorage.setItem("mfci_firebase_cfg",firebaseConfig.value.trim());localStorage.setItem("mfci_company_code",code);
+  syncDot.className="syncdot live";syncText.textContent="LIVE SYNC";alert("Live sync enabled.");
+ }catch(e){syncDot.className="syncdot off";syncText.textContent="SYNC ERROR";alert("Could not enable sync: "+e.message)}
+};
+window.disableSync=()=>{cloud=null;if(unsub)unsub();syncDot.className="syncdot";syncText.textContent="LOCAL";alert("Local-only mode enabled.")};
+window.exportBackup=()=>{let b=new Blob([JSON.stringify(db,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="MFCI_Backup.json";a.click();URL.revokeObjectURL(a.href)};
+window.importBackup=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=async()=>{try{db=JSON.parse(r.result);await persist();alert("Backup imported.")}catch{alert("Invalid backup.")}};r.readAsText(f)};
+iDate.value=today();eDate.value=today();jStart.value=today();dDate.value=today();setupSignature();
+render();
+const savedCfg=localStorage.getItem("mfci_firebase_cfg"),savedCode=localStorage.getItem("mfci_company_code");if(savedCfg){firebaseConfig.value=savedCfg;companyCode.value=savedCode||"mfci-main"}
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body></html>
