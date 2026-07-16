@@ -193,9 +193,9 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 
 <script type="module">
 import {firebaseConfig} from "./firebase-config.js";
-import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import {browserLocalPersistence,browserSessionPersistence,getAuth,onAuthStateChanged,sendPasswordResetEmail,setPersistence,signInWithEmailAndPassword,signOut} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import {getDatabase,get,onValue,ref,set} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+import {initializeApp} from "/__/firebase/10.12.5/firebase-app.js";
+import {browserLocalPersistence,browserSessionPersistence,getAuth,onAuthStateChanged,sendPasswordResetEmail,setPersistence,signInWithEmailAndPassword,signOut} from "/__/firebase/10.12.5/firebase-auth.js";
+import {getDatabase,get,onValue,ref,set} from "/__/firebase/10.12.5/firebase-database.js";
 
 const emptyDb=()=>({meta:{schemaVersion:4},customers:[],invoices:[],jobs:[],expenses:[],documents:[]});
 const normalizeDb=value=>{let data=value&&typeof value==="object"?value:{};return{meta:{schemaVersion:4},customers:Array.isArray(data.customers)?data.customers:[],invoices:Array.isArray(data.invoices)?data.invoices:[],jobs:Array.isArray(data.jobs)?data.jobs:[],expenses:Array.isArray(data.expenses)?data.expenses:[],documents:Array.isArray(data.documents)?data.documents:[]}};
