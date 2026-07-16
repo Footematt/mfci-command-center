@@ -19,7 +19,7 @@ header{position:sticky;top:0;z-index:20;background:var(--gd);color:white;padding
 .head{display:flex;justify-content:space-between;align-items:center;gap:10px;max-width:1050px;margin:auto}
 .brand{font-weight:900;font-size:1.08rem}.sub{font-size:.7rem;opacity:.72}.mode{font-size:.65rem;border:1px solid #607d69;border-radius:999px;padding:6px 8px}
 main{max-width:1050px;margin:auto;padding:13px 12px 105px}.page{display:none}.page.active{display:block}
-nav{position:fixed;bottom:0;left:0;right:0;z-index:30;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(8,1fr);padding-bottom:env(safe-area-inset-bottom)}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:30;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(9,1fr);padding-bottom:env(safe-area-inset-bottom)}
 nav button{border:0;background:#fff;padding:11px 1px;color:#5f6a61;font-size:.57rem}nav button.active{background:#edf5e9;color:var(--gd);font-weight:900}
 .grid{display:grid;gap:10px}.stats{grid-template-columns:repeat(2,1fr)}.card{background:#fff;border:1px solid var(--line);border-radius:15px;padding:14px;box-shadow:0 7px 18px rgba(20,40,25,.04)}
 .label{font-size:.72rem;color:var(--muted)}.value{font-size:1.28rem;font-weight:900;margin-top:4px}
@@ -41,6 +41,9 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 .auth-fallback{margin-top:8px;font-size:.78rem}.auth-fallback a{color:var(--g);font-weight:800}
 .account-line{font-size:.72rem;opacity:.8;margin-top:2px}.full-width{width:100%}
 .investment-home{width:100%;margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;color:var(--ink)}.investment-home .amount{text-align:right}.trend{font-weight:900}.trend.up{color:#2f7a3b}.trend.down{color:#a63838}.trend.flat{color:var(--muted)}
+.market-status{font-size:.74rem;margin:8px 0;color:var(--muted)}.market-status.live{color:#2f7a3b}.market-status.error{color:var(--red)}
+.chat{display:grid;gap:10px;max-height:52vh;overflow:auto;padding:4px}.bubble{max-width:88%;padding:11px 13px;border-radius:14px;white-space:pre-wrap;line-height:1.45}.bubble.user{justify-self:end;background:var(--g);color:#fff}.bubble.assistant{justify-self:start;background:#fff;border:1px solid var(--line)}
+.prompt-row{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px}.prompt-row button{white-space:nowrap}.copilot-compose{position:sticky;bottom:74px;background:var(--paper);padding-top:10px}.copilot-compose textarea{min-height:70px}
 @media(min-width:760px){.stats{grid-template-columns:repeat(4,1fr)}.two{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -84,6 +87,7 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 <button class="secondary" onclick="go('jobs');show('jobForm')">Add job</button>
 <button class="secondary" onclick="go('expenses');show('expenseForm')">Add expense</button>
 <button class="secondary" onclick="go('documents')">Create document</button>
+<button class="secondary" onclick="go('copilot')">Ask AI copilot</button>
 </div>
 </section>
 
@@ -178,22 +182,40 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 </section>
 
 <section id="investments" class="page">
-<div class="section"><div><h2>MK Investments</h2><p>Portfolio value, overall gain or loss, and daily direction.</p></div><button class="primary" onclick="newInvestment()">New</button></div>
+<div class="section"><div><h2>MK Investments</h2><p>Portfolio value, overall gain or loss, and daily direction.</p></div><div class="actions"><button class="secondary" onclick="refreshMarketData()">Refresh prices</button><button class="primary" onclick="newInvestment()">New</button></div></div>
 <div class="grid stats">
 <div class="card"><div class="label">Total value</div><div class="value" id="invTotal">$0.00</div></div>
 <div class="card"><div class="label">Total invested</div><div class="value" id="invCost">$0.00</div></div>
 <div class="card"><div class="label">Overall gain / loss</div><div class="value" id="invGain">$0.00</div></div>
 <div class="card"><div class="label">Weighted daily trend</div><div class="value trend flat" id="invTrend">No change</div></div>
 </div>
+<div id="marketStatus" class="market-status">Add a symbol and shares/units to enable live portfolio pricing.</div>
 <div id="investmentForm" class="card form hidden" style="margin-top:10px">
 <h3 id="investmentFormTitle">New investment</h3>
-<div class="row"><div class="field"><label>Investment name</label><input id="invName" placeholder="Example: TFSA or Apple"></div><div class="field"><label>Symbol (optional)</label><input id="invSymbol" placeholder="Example: AAPL"></div></div>
-<div class="row"><div class="field"><label>Amount invested</label><input id="invInvested" type="number" min="0" step="0.01" inputmode="decimal"></div><div class="field"><label>Current value</label><input id="invCurrent" type="number" min="0" step="0.01" inputmode="decimal"></div></div>
-<div class="field"><label>Today's change %</label><input id="invDaily" type="number" step="0.01" inputmode="decimal" placeholder="Use a minus sign when down"></div>
+<div class="row"><div class="field"><label>Investment name</label><input id="invName" placeholder="Example: TFSA or Apple"></div><div class="field"><label>Symbol (optional)</label><input id="invSymbol" placeholder="Example: AAPL or TD.TO"></div></div>
+<div class="row"><div class="field"><label>Amount invested (CAD)</label><input id="invInvested" type="number" min="0" step="0.01" inputmode="decimal"></div><div class="field"><label>Shares / units</label><input id="invUnits" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="Used for live value"></div></div>
+<div class="row"><div class="field"><label>Current value (manual fallback)</label><input id="invCurrent" type="number" min="0" step="0.01" inputmode="decimal"></div><div class="field"><label>Today's change % (fallback)</label><input id="invDaily" type="number" step="0.01" inputmode="decimal" placeholder="Use a minus sign when down"></div></div>
 <div class="actions"><button id="investmentSaveButton" class="primary" onclick="saveInvestment()">Save investment</button><button class="secondary" onclick="closeInvestmentForm()">Cancel</button></div>
 </div>
-<div class="notice" style="margin-top:10px">Enter each investment's current value and today's percentage change. MK Investments calculates the portfolio-weighted daily average; it does not place trades or connect to a brokerage.</div>
+<div class="notice" style="margin-top:10px">Symbol-based holdings refresh through the secure MFCI server. Prices may be delayed and values are converted to CAD when supported. MK Investments tracks a portfolio only; it does not place trades or connect to a brokerage.</div>
 <div id="investmentList" class="list" style="margin-top:10px"></div>
+</section>
+
+<section id="copilot" class="page">
+<div class="section"><div><h2>MFCI AI Copilot</h2><p>Private business and portfolio analysis for approved owners.</p></div></div>
+<div class="notice">The copilot can analyze the current workspace but cannot send emails, change records, or place investments. Always verify financial, tax, legal, and safety decisions.</div>
+<div class="prompt-row" style="margin-top:10px">
+<button class="secondary" onclick="askCopilot('Summarize the business and list the three most important actions today.')">Daily summary</button>
+<button class="secondary" onclick="askCopilot('Review overdue invoices and suggest a practical collection priority.')">Overdue invoices</button>
+<button class="secondary" onclick="askCopilot('Review expenses by category and flag anything unusual.')">Expense review</button>
+<button class="secondary" onclick="askCopilot('Analyze the MK Investments snapshot, explain the daily movement, and identify concentration risks.')">Portfolio review</button>
+</div>
+<div id="copilotChat" class="chat" style="margin-top:10px"><div class="bubble assistant">I'm ready to analyze the current MFCI workspace. Choose a prompt or ask a question below.</div></div>
+<form id="copilotForm" class="copilot-compose form">
+<div class="field"><label for="copilotQuestion">Ask the copilot</label><textarea id="copilotQuestion" maxlength="2000" placeholder="Example: What should I follow up on today?"></textarea></div>
+<button id="copilotSend" class="primary" type="submit">Send</button>
+<div id="copilotStatus" class="market-status" role="status" aria-live="polite"></div>
+</form>
 </section>
 
 <section id="more" class="page">
@@ -219,6 +241,7 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 <button data-page="expenses" onclick="go('expenses',this)">Expenses</button>
 <button data-page="documents" onclick="go('documents',this)">Docs</button>
 <button data-page="investments" onclick="go('investments',this)">MK Invest</button>
+<button data-page="copilot" onclick="go('copilot',this)">Copilot</button>
 <button data-page="more" onclick="go('more',this)">More</button>
 </nav>
 </div>
@@ -264,11 +287,11 @@ window.newExpense=()=>{editingExpenseId=null;clearExpenseFields();expenseFormTit
 window.closeExpenseForm=()=>{editingExpenseId=null;clearExpenseFields();hide("expenseForm")};
 window.editExpense=id=>{let x=db.expenses.find(e=>e.id===id);if(!x)return alert("Expense not found. Please refresh and try again.");editingExpenseId=id;eAmount.value=Number(x.amount||0);eDate.value=x.date||today();eCategory.value=x.category||"Materials";eJob.value=x.job||"";eNotes.value=x.notes||"";expenseFormTitle.textContent=`Edit ${x.category||"expense"}`;expenseSaveButton.textContent="Update expense";show("expenseForm");eAmount.focus()};
 window.saveExpense=async()=>{let amount=Number(eAmount.value);if(!Number.isFinite(amount)||amount<=0)return alert("Enter a valid amount.");let values={amount:cents(amount)/100,date:eDate.value,category:eCategory.value,job:eJob.value.trim(),notes:eNotes.value.trim()},existing=editingExpenseId?db.expenses.find(e=>e.id===editingExpenseId):null;if(editingExpenseId&&!existing)return alert("Expense not found. Please refresh and try again.");if(existing)Object.assign(existing,values);else db.expenses.push({id:crypto.randomUUID(),...values});closeExpenseForm();await persist()};
-const clearInvestmentFields=()=>{["invName","invSymbol","invInvested","invCurrent","invDaily"].forEach(x=>$(x).value="")};
+const clearInvestmentFields=()=>{["invName","invSymbol","invInvested","invUnits","invCurrent","invDaily"].forEach(x=>$(x).value="")};
 window.newInvestment=()=>{editingInvestmentId=null;clearInvestmentFields();investmentFormTitle.textContent="New investment";investmentSaveButton.textContent="Save investment";show("investmentForm");invName.focus()};
 window.closeInvestmentForm=()=>{editingInvestmentId=null;clearInvestmentFields();hide("investmentForm")};
-window.editInvestment=id=>{let x=db.investments.find(i=>i.id===id);if(!x)return alert("Investment not found. Please refresh and try again.");editingInvestmentId=id;invName.value=x.name||"";invSymbol.value=x.symbol||"";invInvested.value=Number(x.invested||0);invCurrent.value=Number(x.current||0);invDaily.value=Number(x.dailyChange||0);investmentFormTitle.textContent=`Edit ${x.name||"investment"}`;investmentSaveButton.textContent="Update investment";show("investmentForm");invName.focus()};
-window.saveInvestment=async()=>{let name=invName.value.trim(),invested=Number(invInvested.value),current=Number(invCurrent.value),dailyChange=Number(invDaily.value||0);if(!name)return alert("Enter an investment name.");if(!Number.isFinite(invested)||invested<0||!Number.isFinite(current)||current<0||!Number.isFinite(dailyChange))return alert("Enter valid investment amounts and daily change.");let values={name,symbol:invSymbol.value.trim().toUpperCase(),invested:cents(invested)/100,current:cents(current)/100,dailyChange:Math.round(dailyChange*100)/100,updated:new Date().toISOString()},existing=editingInvestmentId?db.investments.find(i=>i.id===editingInvestmentId):null;if(editingInvestmentId&&!existing)return alert("Investment not found. Please refresh and try again.");if(existing)Object.assign(existing,values);else db.investments.push({id:crypto.randomUUID(),...values});closeInvestmentForm();await persist()};
+window.editInvestment=id=>{let x=db.investments.find(i=>i.id===id);if(!x)return alert("Investment not found. Please refresh and try again.");editingInvestmentId=id;invName.value=x.name||"";invSymbol.value=x.symbol||"";invInvested.value=Number(x.invested||0);invUnits.value=Number(x.units||0)||"";invCurrent.value=Number(x.current||0);invDaily.value=Number(x.dailyChange||0);investmentFormTitle.textContent=`Edit ${x.name||"investment"}`;investmentSaveButton.textContent="Update investment";show("investmentForm");invName.focus()};
+window.saveInvestment=async()=>{let name=invName.value.trim(),invested=Number(invInvested.value),units=Number(invUnits.value||0),current=Number(invCurrent.value),dailyChange=Number(invDaily.value||0);if(!name)return alert("Enter an investment name.");if(!Number.isFinite(invested)||invested<0||!Number.isFinite(units)||units<0||!Number.isFinite(current)||current<0||!Number.isFinite(dailyChange))return alert("Enter valid investment amounts and daily change.");let values={name,symbol:invSymbol.value.trim().toUpperCase(),invested:cents(invested)/100,units:Math.round(units*10000)/10000,current:cents(current)/100,dailyChange:Math.round(dailyChange*100)/100,updated:new Date().toISOString()},existing=editingInvestmentId?db.investments.find(i=>i.id===editingInvestmentId):null;if(editingInvestmentId&&!existing)return alert("Investment not found. Please refresh and try again.");if(existing)Object.assign(existing,values);else db.investments.push({id:crypto.randomUUID(),...values});closeInvestmentForm();await persist();if(values.symbol&&values.units>0)refreshMarketData({quiet:true})};
 window.addPayment=id=>{let x=db.invoices.find(i=>i.id===id);if(!x)return alert("Invoice not found. Please refresh and try again.");let balance=Math.max(0,cents(x.total)-cents(x.paid))/100;paymentInvoiceId=id;$("paymentTitle").textContent=`Record payment · Invoice ${x.number||""}`;$("paymentBalance").textContent=`Remaining balance: ${money(balance)}`;$("paymentAmount").value="";$("paymentAmount").max=balance.toFixed(2);show("paymentForm");$("paymentAmount").focus()};
 window.closePayment=()=>{paymentInvoiceId=null;$("paymentAmount").value="";hide("paymentForm")};
 window.savePayment=async()=>{let x=db.invoices.find(i=>i.id===paymentInvoiceId);if(!x)return alert("Invoice not found. Please refresh and try again.");let amount=Number($("paymentAmount").value),amountCents=cents(amount),balanceCents=Math.max(0,cents(x.total)-cents(x.paid)),balance=balanceCents/100;if(!Number.isFinite(amount)||amountCents<=0)return alert("Enter a valid payment amount.");if(amountCents>balanceCents)return alert(`Payment cannot be more than the remaining balance of ${money(balance)}.`);let wasPaid=cents(x.paid)>=cents(x.total);x.paid=Math.min(cents(x.total),cents(x.paid)+amountCents)/100;if(!wasPaid&&cents(x.paid)>=cents(x.total))x.paidAt=new Date().toISOString();closePayment();await persist()};
@@ -396,6 +419,7 @@ function render(){
  investmentList.innerHTML=db.investments.length?"":'<div class="card empty">No investments yet. Add your first investment to begin tracking.</div>';
  db.investments.forEach(x=>{let change=Number(x.current||0)-Number(x.invested||0),daily=Number(x.dailyChange||0),updated=x.updated?new Date(x.updated).toLocaleDateString("en-CA"):"";investmentList.innerHTML+=`<div class="card item"><div><b>${esc(x.name)}</b>${x.symbol?` <small>(${esc(x.symbol)})</small>`:""}<br><small>Invested ${money(x.invested)}${updated?` · Updated ${esc(updated)}`:""}</small><div class="actions"><button class="secondary" onclick="editInvestment('${x.id}')">Edit</button><button class="danger" onclick="delItem('investments','${x.id}')">Delete</button></div></div><div class="amount">${money(x.current)}<br><small class="trend ${change>.005?"up":change<-.005?"down":"flat"}">${change>0?"+":""}${money(change)} overall</small><br><small class="trend ${daily>.005?"up":daily<-.005?"down":"flat"}">${trendText(daily)} today</small></div></div>`});
 }
+window.MFCI={getDb:()=>db,getAuth:()=>auth,persist,render,money,cents,today};
 window.exportBackup=()=>{let b=new Blob([JSON.stringify(db,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="MFCI_Backup.json";a.click();URL.revokeObjectURL(a.href)};
 window.importBackup=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=async()=>{try{db=normalizeDb(JSON.parse(r.result));await persist();alert("Backup imported.")}catch{alert("Invalid backup.")}};r.readAsText(f)};
 function loginStatus(message,isError=false){loginMessage.textContent=message;loginMessage.className="auth-message"+(isError?" error":"")}
@@ -428,10 +452,11 @@ onAuthStateChanged(auth,async user=>{
   authView.classList.add("hidden");appShell.classList.remove("hidden");syncDot.className="syncdot";syncText.textContent="CONNECTING";
   cloudRef=ref(realtimeDb,"workspaces/mfci-main");
   const firstWorkspace=await get(cloudRef);if(!firstWorkspace.exists())await set(cloudRef,db);
-  unsub=onValue(cloudRef,snapshot=>{db=normalizeDb(snapshot.val());localStorage.setItem("mfci_sync_db",JSON.stringify(db));syncDot.className="syncdot live";syncText.textContent="LIVE SYNC";render()},()=>{syncDot.className="syncdot off";syncText.textContent="SYNC ERROR"});
+  unsub=onValue(cloudRef,snapshot=>{db=normalizeDb(snapshot.val());localStorage.setItem("mfci_sync_db",JSON.stringify(db));syncDot.className="syncdot live";syncText.textContent="LIVE SYNC";render();window.dispatchEvent(new CustomEvent("mfci:data-ready"))},()=>{syncDot.className="syncdot off";syncText.textContent="SYNC ERROR"});
  }catch(e){await signOut(auth);showLogin("Owner access could not be verified. Please try again.",true)}
 });
 iDate.value=today();eDate.value=today();jStart.value=today();dDate.value=today();setupSignature();render();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
+<script type="module" src="/assets/live-modules.js"></script>
 </body></html>

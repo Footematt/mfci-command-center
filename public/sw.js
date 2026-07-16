@@ -1,4 +1,4 @@
-const CACHE = "mfci-command-center-v5";
+const CACHE = "mfci-command-center-v6";
 const ASSETS = [
   "/",
   "/index.html",
@@ -7,6 +7,7 @@ const ASSETS = [
   "/icon-180.png",
   "/icon-192.png",
   "/icon-512.png"
+  ,"/assets/live-modules.js"
 ];
 
 self.addEventListener("install", event => {
