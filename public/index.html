@@ -19,8 +19,8 @@ header{position:sticky;top:0;z-index:20;background:var(--gd);color:white;padding
 .head{display:flex;justify-content:space-between;align-items:center;gap:10px;max-width:1050px;margin:auto}
 .brand{font-weight:900;font-size:1.08rem}.sub{font-size:.7rem;opacity:.72}.mode{font-size:.65rem;border:1px solid #607d69;border-radius:999px;padding:6px 8px}
 main{max-width:1050px;margin:auto;padding:13px 12px 105px}.page{display:none}.page.active{display:block}
-nav{position:fixed;bottom:0;left:0;right:0;z-index:30;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(7,1fr);padding-bottom:env(safe-area-inset-bottom)}
-nav button{border:0;background:#fff;padding:11px 2px;color:#5f6a61;font-size:.62rem}nav button.active{background:#edf5e9;color:var(--gd);font-weight:900}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:30;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(8,1fr);padding-bottom:env(safe-area-inset-bottom)}
+nav button{border:0;background:#fff;padding:11px 1px;color:#5f6a61;font-size:.57rem}nav button.active{background:#edf5e9;color:var(--gd);font-weight:900}
 .grid{display:grid;gap:10px}.stats{grid-template-columns:repeat(2,1fr)}.card{background:#fff;border:1px solid var(--line);border-radius:15px;padding:14px;box-shadow:0 7px 18px rgba(20,40,25,.04)}
 .label{font-size:.72rem;color:var(--muted)}.value{font-size:1.28rem;font-weight:900;margin-top:4px}
 h2{font-size:1.07rem;margin:0 0 5px}h3{font-size:.96rem;margin:0 0 5px}p{color:var(--muted);line-height:1.42;margin:5px 0}
@@ -40,6 +40,7 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 .link-button{border:0;background:transparent;color:var(--g);padding:4px 0;font-weight:800}.auth-message{min-height:20px;margin-top:10px;font-size:.78rem}.auth-message.error{color:var(--red)}
 .auth-fallback{margin-top:8px;font-size:.78rem}.auth-fallback a{color:var(--g);font-weight:800}
 .account-line{font-size:.72rem;opacity:.8;margin-top:2px}.full-width{width:100%}
+.investment-home{width:100%;margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;color:var(--ink)}.investment-home .amount{text-align:right}.trend{font-weight:900}.trend.up{color:#2f7a3b}.trend.down{color:#a63838}.trend.flat{color:var(--muted)}
 @media(min-width:760px){.stats{grid-template-columns:repeat(4,1fr)}.two{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -72,6 +73,7 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 <div class="card"><div class="label">HST collected</div><div class="value" id="sHST">$0.00</div></div>
 <div class="card"><div class="label">Active jobs</div><div class="value" id="sJobs">0</div></div>
 </div>
+<button type="button" class="card investment-home" onclick="go('investments')"><span><span class="label">MK Investments</span><br><span class="value" id="sInvestment">$0.00</span></span><span class="amount"><span class="label">Average daily trend</span><br><span id="sInvestmentTrend" class="trend flat">No change</span></span></button>
 <div class="section"><div><h2>Priority queue</h2><p>Items requiring attention.</p></div></div>
 <div id="priority" class="list"></div>
 <div class="section"><h2>Quick actions</h2></div>
@@ -173,6 +175,25 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 <div id="documentList" class="list"></div>
 </section>
 
+<section id="investments" class="page">
+<div class="section"><div><h2>MK Investments</h2><p>Portfolio value, overall gain or loss, and daily direction.</p></div><button class="primary" onclick="newInvestment()">New</button></div>
+<div class="grid stats">
+<div class="card"><div class="label">Total value</div><div class="value" id="invTotal">$0.00</div></div>
+<div class="card"><div class="label">Total invested</div><div class="value" id="invCost">$0.00</div></div>
+<div class="card"><div class="label">Overall gain / loss</div><div class="value" id="invGain">$0.00</div></div>
+<div class="card"><div class="label">Weighted daily trend</div><div class="value trend flat" id="invTrend">No change</div></div>
+</div>
+<div id="investmentForm" class="card form hidden" style="margin-top:10px">
+<h3 id="investmentFormTitle">New investment</h3>
+<div class="row"><div class="field"><label>Investment name</label><input id="invName" placeholder="Example: TFSA or Apple"></div><div class="field"><label>Symbol (optional)</label><input id="invSymbol" placeholder="Example: AAPL"></div></div>
+<div class="row"><div class="field"><label>Amount invested</label><input id="invInvested" type="number" min="0" step="0.01" inputmode="decimal"></div><div class="field"><label>Current value</label><input id="invCurrent" type="number" min="0" step="0.01" inputmode="decimal"></div></div>
+<div class="field"><label>Today's change %</label><input id="invDaily" type="number" step="0.01" inputmode="decimal" placeholder="Use a minus sign when down"></div>
+<div class="actions"><button id="investmentSaveButton" class="primary" onclick="saveInvestment()">Save investment</button><button class="secondary" onclick="closeInvestmentForm()">Cancel</button></div>
+</div>
+<div class="notice" style="margin-top:10px">Enter each investment's current value and today's percentage change. MK Investments calculates the portfolio-weighted daily average; it does not place trades or connect to a brokerage.</div>
+<div id="investmentList" class="list" style="margin-top:10px"></div>
+</section>
+
 <section id="more" class="page">
 <div class="section"><div><h2>Account and backup</h2><p>Your approved owner account controls access.</p></div></div>
 <div class="notice">This dashboard and the shared MFCI workspace are restricted to authenticated owners.</div>
@@ -185,20 +206,18 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 <h3>Backup</h3><p>Export a full copy before changing devices.</p>
 <div class="actions"><button class="secondary" onclick="exportBackup()">Export backup</button><label class="secondary">Import backup<input type="file" accept=".json" onchange="importBackup(event)" style="display:none"></label></div>
 </div>
-<div class="card" style="margin-top:10px">
-<h3>TradePilot</h3><p>Paper mode only. Broker connection remains disabled until secure server setup.</p>
-</div>
 </section>
 </main>
 
 <nav>
-<button class="active" onclick="go('home',this)">Home</button>
-<button onclick="go('customers',this)">Customers</button>
-<button onclick="go('invoices',this)">Invoices</button>
-<button onclick="go('jobs',this)">Jobs</button>
-<button onclick="go('expenses',this)">Expenses</button>
-<button onclick="go('documents',this)">Docs</button>
-<button onclick="go('more',this)">More</button>
+<button class="active" data-page="home" onclick="go('home',this)">Home</button>
+<button data-page="customers" onclick="go('customers',this)">Customers</button>
+<button data-page="invoices" onclick="go('invoices',this)">Invoices</button>
+<button data-page="jobs" onclick="go('jobs',this)">Jobs</button>
+<button data-page="expenses" onclick="go('expenses',this)">Expenses</button>
+<button data-page="documents" onclick="go('documents',this)">Docs</button>
+<button data-page="investments" onclick="go('investments',this)">MK Invest</button>
+<button data-page="more" onclick="go('more',this)">More</button>
 </nav>
 </div>
 
@@ -216,16 +235,16 @@ const onAuthStateChanged=(instance,next)=>instance.onAuthStateChanged(next),sign
 const setPersistence=(instance,persistence)=>instance.setPersistence(persistence),signInWithEmailAndPassword=(instance,email,password)=>instance.signInWithEmailAndPassword(email,password);
 const sendPasswordResetEmail=(instance,email)=>instance.sendPasswordResetEmail(email);
 
-const emptyDb=()=>({meta:{schemaVersion:4},customers:[],invoices:[],jobs:[],expenses:[],documents:[]});
-const normalizeDb=value=>{let data=value&&typeof value==="object"?value:{};return{meta:{schemaVersion:4},customers:Array.isArray(data.customers)?data.customers:[],invoices:Array.isArray(data.invoices)?data.invoices:[],jobs:Array.isArray(data.jobs)?data.jobs:[],expenses:Array.isArray(data.expenses)?data.expenses:[],documents:Array.isArray(data.documents)?data.documents:[]}};
+const emptyDb=()=>({meta:{schemaVersion:5},customers:[],invoices:[],jobs:[],expenses:[],documents:[],investments:[]});
+const normalizeDb=value=>{let data=value&&typeof value==="object"?value:{};return{meta:{schemaVersion:5},customers:Array.isArray(data.customers)?data.customers:[],invoices:Array.isArray(data.invoices)?data.invoices:[],jobs:Array.isArray(data.jobs)?data.jobs:[],expenses:Array.isArray(data.expenses)?data.expenses:[],documents:Array.isArray(data.documents)?data.documents:[],investments:Array.isArray(data.investments)?data.investments:[]}};
 let db=normalizeDb(JSON.parse(localStorage.getItem("mfci_sync_db")||"null")||emptyDb());
-let cloudRef=null,unsub=null,currentOwner=null,paymentInvoiceId=null,editingInvoiceId=null;
+let cloudRef=null,unsub=null,currentOwner=null,paymentInvoiceId=null,editingInvoiceId=null,editingInvestmentId=null;
 const $=id=>document.getElementById(id),money=n=>new Intl.NumberFormat("en-CA",{style:"currency",currency:"CAD"}).format(Number(n||0)),cents=n=>Math.round(Number(n||0)*100),today=()=>new Date().toISOString().slice(0,10);
 const DEFAULT_INVOICE_TERMS="Payment is due within 7 days. After 7 days, Net 30 interest terms and applicable charges may apply.";
 const BUSINESS_EMAIL="mfootescontractinginc@gmail.com";
 const daysOverdue=due=>{if(!due||due>=today())return 0;let[y,m,d]=due.split("-").map(Number),[ty,tm,td]=today().split("-").map(Number);return Math.max(0,Math.round((Date.UTC(ty,tm-1,td)-Date.UTC(y,m-1,d))/86400000))};
 window.show=id=>$(id).classList.remove("hidden");window.hide=id=>$(id).classList.add("hidden");
-window.go=(id,btn)=>{document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));$(id).classList.add("active");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));if(btn)btn.classList.add("active");window.scrollTo(0,0);render()};
+window.go=(id,btn)=>{document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));$(id).classList.add("active");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));(btn||document.querySelector(`nav button[data-page="${id}"]`))?.classList.add("active");window.scrollTo(0,0);render()};
 async function persist(){
  localStorage.setItem("mfci_sync_db",JSON.stringify(db));
  render();
@@ -239,6 +258,11 @@ window.editInvoice=id=>{let x=db.invoices.find(i=>i.id===id);if(!x)return alert(
 window.saveInvoice=async()=>{let sub=Number(iSubtotal.value);if(!iNumber.value.trim()||!sub)return alert("Enter invoice number and subtotal.");let rate=Number(iHstRate.value||0),hst=cents(sub*rate/100)/100,total=cents(sub+hst)/100,existing=editingInvoiceId?db.invoices.find(i=>i.id===editingInvoiceId):null,paid=Number(existing?.paid||0);if(editingInvoiceId&&!existing)return alert("Invoice not found. Please refresh and try again.");if(cents(total)<cents(paid))return alert(`Invoice total cannot be less than the ${money(paid)} already paid.`);let values={number:iNumber.value.trim(),customer:iCustomer.value.trim(),property:iProperty.value.trim(),days:Math.max(0,Math.round(Number(iDays.value||0))),contractors:Math.max(0,Math.round(Number(iContractors.value||0))),subtotal:sub,hstRate:rate,hst,total,date:iDate.value,due:iDue.value,notes:iNotes.value.trim(),terms:iTerms.value.trim()||DEFAULT_INVOICE_TERMS};if(existing){Object.assign(existing,values);if(cents(existing.paid)<cents(existing.total))delete existing.paidAt}else db.invoices.push({id:crypto.randomUUID(),...values,paid:0});closeInvoiceForm();await persist()};
 window.saveJob=async()=>{if(!jName.value.trim())return alert("Enter a job name.");db.jobs.push({id:crypto.randomUUID(),name:jName.value.trim(),customer:jCustomer.value.trim(),address:jAddress.value.trim(),start:jStart.value,status:jStatus.value,notes:jNotes.value.trim()});["jName","jCustomer","jAddress","jNotes"].forEach(x=>$(x).value="");hide("jobForm");await persist()};
 window.saveExpense=async()=>{let amount=Number(eAmount.value);if(!amount)return alert("Enter an amount.");db.expenses.push({id:crypto.randomUUID(),amount,date:eDate.value,category:eCategory.value,job:eJob.value.trim(),notes:eNotes.value.trim()});["eAmount","eJob","eNotes"].forEach(x=>$(x).value="");hide("expenseForm");await persist()};
+const clearInvestmentFields=()=>{["invName","invSymbol","invInvested","invCurrent","invDaily"].forEach(x=>$(x).value="")};
+window.newInvestment=()=>{editingInvestmentId=null;clearInvestmentFields();investmentFormTitle.textContent="New investment";investmentSaveButton.textContent="Save investment";show("investmentForm");invName.focus()};
+window.closeInvestmentForm=()=>{editingInvestmentId=null;clearInvestmentFields();hide("investmentForm")};
+window.editInvestment=id=>{let x=db.investments.find(i=>i.id===id);if(!x)return alert("Investment not found. Please refresh and try again.");editingInvestmentId=id;invName.value=x.name||"";invSymbol.value=x.symbol||"";invInvested.value=Number(x.invested||0);invCurrent.value=Number(x.current||0);invDaily.value=Number(x.dailyChange||0);investmentFormTitle.textContent=`Edit ${x.name||"investment"}`;investmentSaveButton.textContent="Update investment";show("investmentForm");invName.focus()};
+window.saveInvestment=async()=>{let name=invName.value.trim(),invested=Number(invInvested.value),current=Number(invCurrent.value),dailyChange=Number(invDaily.value||0);if(!name)return alert("Enter an investment name.");if(!Number.isFinite(invested)||invested<0||!Number.isFinite(current)||current<0||!Number.isFinite(dailyChange))return alert("Enter valid investment amounts and daily change.");let values={name,symbol:invSymbol.value.trim().toUpperCase(),invested:cents(invested)/100,current:cents(current)/100,dailyChange:Math.round(dailyChange*100)/100,updated:new Date().toISOString()},existing=editingInvestmentId?db.investments.find(i=>i.id===editingInvestmentId):null;if(editingInvestmentId&&!existing)return alert("Investment not found. Please refresh and try again.");if(existing)Object.assign(existing,values);else db.investments.push({id:crypto.randomUUID(),...values});closeInvestmentForm();await persist()};
 window.addPayment=id=>{let x=db.invoices.find(i=>i.id===id);if(!x)return alert("Invoice not found. Please refresh and try again.");let balance=Math.max(0,cents(x.total)-cents(x.paid))/100;paymentInvoiceId=id;$("paymentTitle").textContent=`Record payment · Invoice ${x.number||""}`;$("paymentBalance").textContent=`Remaining balance: ${money(balance)}`;$("paymentAmount").value="";$("paymentAmount").max=balance.toFixed(2);show("paymentForm");$("paymentAmount").focus()};
 window.closePayment=()=>{paymentInvoiceId=null;$("paymentAmount").value="";hide("paymentForm")};
 window.savePayment=async()=>{let x=db.invoices.find(i=>i.id===paymentInvoiceId);if(!x)return alert("Invoice not found. Please refresh and try again.");let amount=Number($("paymentAmount").value),amountCents=cents(amount),balanceCents=Math.max(0,cents(x.total)-cents(x.paid)),balance=balanceCents/100;if(!Number.isFinite(amount)||amountCents<=0)return alert("Enter a valid payment amount.");if(amountCents>balanceCents)return alert(`Payment cannot be more than the remaining balance of ${money(balance)}.`);let wasPaid=cents(x.paid)>=cents(x.total);x.paid=Math.min(cents(x.total),cents(x.paid)+amountCents)/100;if(!wasPaid&&cents(x.paid)>=cents(x.total))x.paidAt=new Date().toISOString();closePayment();await persist()};
@@ -347,6 +371,10 @@ window.emailInvoice=id=>{let i=db.invoices.find(x=>x.id===id);if(!i)return alert
 window.printReceipt=id=>{let i=db.invoices.find(x=>x.id===id);if(!i||cents(i.paid)<cents(i.total))return alert("A receipt is available after the invoice is paid in full.");let w=window.open("","_blank");if(!w)return alert("Allow pop-ups to open the receipt.");w.document.write(receiptHTML(i));w.document.close()};
 window.emailReceipt=id=>{let i=db.invoices.find(x=>x.id===id);if(!i||cents(i.paid)<cents(i.total))return alert("A receipt is available after the invoice is paid in full.");let c=invoiceCustomer(i),email=String(c?.email||"").trim();if(!email)return alert(`Add an email address to the ${i.customer||"customer"} record first.`);let subject=`Paid receipt - Invoice ${i.number}`,body=[`Hello ${c.contact||i.customer||""},`,"",`This confirms that Invoice ${i.number} has been paid in full.`,`Property / project: ${i.property||""}`,`Total paid: ${money(i.total)}`,`Payment completed: ${receiptDate(i)}`,"Balance: $0.00","","Thank you,","MFCI Contracting Inc.",BUSINESS_EMAIL].join("\n");openBusinessEmail(email,subject,body)};
 
+const investmentSummary=()=>{let items=db.investments||[],total=items.reduce((sum,x)=>sum+Number(x.current||0),0),cost=items.reduce((sum,x)=>sum+Number(x.invested||0),0),dailyDollars=items.reduce((sum,x)=>sum+Number(x.current||0)*Number(x.dailyChange||0)/100,0);return{total,cost,gain:total-cost,dailyPercent:total?dailyDollars/total*100:0}};
+const trendText=value=>Math.abs(value)<.005?"No change":`${value>0?"▲":"▼"} ${Math.abs(value).toFixed(2)}%`;
+const applyTrend=(element,value)=>{element.textContent=trendText(value);element.className=(element.classList.contains("value")?"value ":"")+"trend "+(value>.005?"up":value<-.005?"down":"flat")};
+
 function render(){
  let ar=db.invoices.reduce((s,i)=>s+Math.max(0,i.total-i.paid),0),od=db.invoices.filter(i=>i.due&&i.due<today()&&i.paid<i.total).reduce((s,i)=>s+i.total-i.paid,0),hst=db.invoices.reduce((s,i)=>s+i.hst,0),jobs=db.jobs.filter(j=>j.status==="Active").length;
  sAR.textContent=money(ar);sOD.textContent=money(od);sHST.textContent=money(hst);sJobs.textContent=jobs;
@@ -358,9 +386,12 @@ function render(){
  documentList.innerHTML=(db.documents&&db.documents.length)?"":'<div class="card empty">No saved documents yet.</div>';
  (db.documents||[]).forEach(d=>{let t=templates[d.template]||templates.completion;documentList.innerHTML+=`<div class="card item"><div><b>${t.title}</b><br><small>${d.party}${d.project?" · "+d.project:""}</small><p>${d.date||""}</p><div class="actions"><button class="secondary" onclick="printSavedDocument('${d.id}')">Open / Print</button><button class="danger" onclick="delItem('documents','${d.id}')">Delete</button></div></div></div>`});
 
+ let investments=investmentSummary();sInvestment.textContent=money(investments.total);applyTrend(sInvestmentTrend,investments.dailyPercent);invTotal.textContent=money(investments.total);invCost.textContent=money(investments.cost);invGain.textContent=(investments.gain>0?"+":"")+money(investments.gain);invGain.className="value trend "+(investments.gain>.005?"up":investments.gain<-.005?"down":"flat");applyTrend(invTrend,investments.dailyPercent);
+ investmentList.innerHTML=db.investments.length?"":'<div class="card empty">No investments yet. Add your first investment to begin tracking.</div>';
+ db.investments.forEach(x=>{let change=Number(x.current||0)-Number(x.invested||0),daily=Number(x.dailyChange||0),updated=x.updated?new Date(x.updated).toLocaleDateString("en-CA"):"";investmentList.innerHTML+=`<div class="card item"><div><b>${esc(x.name)}</b>${x.symbol?` <small>(${esc(x.symbol)})</small>`:""}<br><small>Invested ${money(x.invested)}${updated?` · Updated ${esc(updated)}`:""}</small><div class="actions"><button class="secondary" onclick="editInvestment('${x.id}')">Edit</button><button class="danger" onclick="delItem('investments','${x.id}')">Delete</button></div></div><div class="amount">${money(x.current)}<br><small class="trend ${change>.005?"up":change<-.005?"down":"flat"}">${change>0?"+":""}${money(change)} overall</small><br><small class="trend ${daily>.005?"up":daily<-.005?"down":"flat"}">${trendText(daily)} today</small></div></div>`});
 }
 window.exportBackup=()=>{let b=new Blob([JSON.stringify(db,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="MFCI_Backup.json";a.click();URL.revokeObjectURL(a.href)};
-window.importBackup=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=async()=>{try{db=JSON.parse(r.result);await persist();alert("Backup imported.")}catch{alert("Invalid backup.")}};r.readAsText(f)};
+window.importBackup=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=async()=>{try{db=normalizeDb(JSON.parse(r.result));await persist();alert("Backup imported.")}catch{alert("Invalid backup.")}};r.readAsText(f)};
 function loginStatus(message,isError=false){loginMessage.textContent=message;loginMessage.className="auth-message"+(isError?" error":"")}
 function showLogin(message="Sign in to continue.",isError=false){appShell.classList.add("hidden");authView.classList.remove("hidden");loginButton.disabled=false;loginStatus(message,isError)}
 function authErrorMessage(error){return error?.message==="sign-in-timeout"?"Sign-in timed out. Check your connection and try again.":error?.code==="auth/invalid-credential"?"The email or password is incorrect.":error?.code==="auth/too-many-requests"?"Too many attempts. Please wait and try again.":"Sign-in failed. Please try again."}
