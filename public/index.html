@@ -106,6 +106,11 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 <div class="field"><label>Description</label><textarea id="iNotes"></textarea></div>
 <div class="actions"><button class="primary" onclick="saveInvoice()">Save</button><button class="secondary" onclick="hide('invoiceForm')">Cancel</button></div>
 </div>
+<div id="paymentForm" class="card form hidden" role="dialog" aria-labelledby="paymentTitle">
+<div><h3 id="paymentTitle">Record payment</h3><p id="paymentBalance">Enter the amount received.</p></div>
+<div class="field"><label for="paymentAmount">Payment amount</label><input id="paymentAmount" type="number" min="0.01" step="0.01" inputmode="decimal"></div>
+<div class="actions"><button class="primary" onclick="savePayment()">Save payment</button><button class="secondary" onclick="closePayment()">Cancel</button></div>
+</div>
 <div id="invoiceList" class="list" style="margin-top:9px"></div>
 </section>
 
@@ -211,7 +216,7 @@ const sendPasswordResetEmail=(instance,email)=>instance.sendPasswordResetEmail(e
 const emptyDb=()=>({meta:{schemaVersion:4},customers:[],invoices:[],jobs:[],expenses:[],documents:[]});
 const normalizeDb=value=>{let data=value&&typeof value==="object"?value:{};return{meta:{schemaVersion:4},customers:Array.isArray(data.customers)?data.customers:[],invoices:Array.isArray(data.invoices)?data.invoices:[],jobs:Array.isArray(data.jobs)?data.jobs:[],expenses:Array.isArray(data.expenses)?data.expenses:[],documents:Array.isArray(data.documents)?data.documents:[]}};
 let db=normalizeDb(JSON.parse(localStorage.getItem("mfci_sync_db")||"null")||emptyDb());
-let cloudRef=null,unsub=null,currentOwner=null;
+let cloudRef=null,unsub=null,currentOwner=null,paymentInvoiceId=null;
 const $=id=>document.getElementById(id),money=n=>new Intl.NumberFormat("en-CA",{style:"currency",currency:"CAD"}).format(Number(n||0)),today=()=>new Date().toISOString().slice(0,10);
 window.show=id=>$(id).classList.remove("hidden");window.hide=id=>$(id).classList.add("hidden");
 window.go=(id,btn)=>{document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));$(id).classList.add("active");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));if(btn)btn.classList.add("active");window.scrollTo(0,0);render()};
@@ -224,7 +229,9 @@ window.saveCustomer=async()=>{if(!cName.value.trim())return alert("Enter a custo
 window.saveInvoice=async()=>{let sub=Number(iSubtotal.value);if(!iNumber.value.trim()||!sub)return alert("Enter invoice number and subtotal.");let rate=Number(iHstRate.value||0),hst=sub*rate/100,total=sub+hst;db.invoices.push({id:crypto.randomUUID(),number:iNumber.value.trim(),customer:iCustomer.value.trim(),property:iProperty.value.trim(),subtotal:sub,hstRate:rate,hst,total,paid:0,date:iDate.value,due:iDue.value,notes:iNotes.value.trim()});["iNumber","iCustomer","iProperty","iSubtotal","iNotes"].forEach(x=>$(x).value="");hide("invoiceForm");await persist()};
 window.saveJob=async()=>{if(!jName.value.trim())return alert("Enter a job name.");db.jobs.push({id:crypto.randomUUID(),name:jName.value.trim(),customer:jCustomer.value.trim(),address:jAddress.value.trim(),start:jStart.value,status:jStatus.value,notes:jNotes.value.trim()});["jName","jCustomer","jAddress","jNotes"].forEach(x=>$(x).value="");hide("jobForm");await persist()};
 window.saveExpense=async()=>{let amount=Number(eAmount.value);if(!amount)return alert("Enter an amount.");db.expenses.push({id:crypto.randomUUID(),amount,date:eDate.value,category:eCategory.value,job:eJob.value.trim(),notes:eNotes.value.trim()});["eAmount","eJob","eNotes"].forEach(x=>$(x).value="");hide("expenseForm");await persist()};
-window.addPayment=async id=>{let x=db.invoices.find(i=>i.id===id),v=Number(prompt("Payment amount:","0"));if(v>0){x.paid=Math.min(x.total,x.paid+v);await persist()}};
+window.addPayment=id=>{let x=db.invoices.find(i=>i.id===id);if(!x)return alert("Invoice not found. Please refresh and try again.");let balance=Math.max(0,Number(x.total||0)-Number(x.paid||0));paymentInvoiceId=id;$("paymentTitle").textContent=`Record payment · Invoice ${x.number||""}`;$("paymentBalance").textContent=`Remaining balance: ${money(balance)}`;$("paymentAmount").value="";$("paymentAmount").max=balance.toFixed(2);show("paymentForm");$("paymentAmount").focus()};
+window.closePayment=()=>{paymentInvoiceId=null;$("paymentAmount").value="";hide("paymentForm")};
+window.savePayment=async()=>{let x=db.invoices.find(i=>i.id===paymentInvoiceId);if(!x)return alert("Invoice not found. Please refresh and try again.");let amount=Number($("paymentAmount").value),balance=Math.max(0,Number(x.total||0)-Number(x.paid||0));if(!Number.isFinite(amount)||amount<=0)return alert("Enter a valid payment amount.");if(amount>balance+0.001)return alert(`Payment cannot be more than the remaining balance of ${money(balance)}.`);x.paid=Math.round((Number(x.paid||0)+amount)*100)/100;closePayment();await persist()};
 window.delItem=async(type,id)=>{if(confirm("Delete this item?")){db[type]=db[type].filter(x=>x.id!==id);await persist()}};
 
 const templates={
