@@ -13,7 +13,7 @@
       "$workspaceId": {
         ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'owner' && root.child('users').child(auth.uid).child('fullAccess').val() === true",
         ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'owner' && root.child('users').child(auth.uid).child('fullAccess').val() === true",
-        ".validate": "$workspaceId === 'mfci-main' && newData.hasChild('meta') && newData.child('meta').child('schemaVersion').val() === 4"
+        ".validate": "$workspaceId === 'mfci-main' && newData.hasChild('meta') && (newData.child('meta').child('schemaVersion').val() === 4 || newData.child('meta').child('schemaVersion').val() === 5)"
       }
     }
   }
