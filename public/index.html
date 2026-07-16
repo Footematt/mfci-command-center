@@ -334,14 +334,25 @@ authFallback.classList.add("hidden");
 loginForm.addEventListener("submit",async event=>{event.preventDefault();loginButton.disabled=true;loginStatus("Signing in…");try{await setPersistence(auth,rememberMe.checked?browserLocalPersistence:browserSessionPersistence);await signInWithEmailAndPassword(auth,loginEmail.value.trim(),loginPassword.value)}catch(e){loginButton.disabled=false;loginStatus(authErrorMessage(e),true)}});
 resetPassword.addEventListener("click",async()=>{let email=loginEmail.value.trim();if(!email)return loginStatus("Enter your email address first.",true);try{await sendPasswordResetEmail(auth,email);loginStatus("Password reset email sent.")}catch(e){loginStatus("Could not send a reset email. Check the address and try again.",true)}});
 window.signOutOwner=()=>signOut(auth);
+const approvedOwnerFallbacks=Object.freeze({
+ rvcd5suMBHTHuEGGHwRRoa8jbfk2:{name:"Kim",email:"kimboboerma@gmail.com",role:"owner",fullAccess:true},
+ SWOily109EWsIG7bFfouDuvQno33:{name:"Matt",email:"mfootescontractinginc@gmail.com",role:"owner",fullAccess:true}
+});
+async function loadOwnerProfile(user){
+ try{
+  const snapshot=await Promise.race([get(ref(realtimeDb,"users/"+user.uid)),new Promise((_,reject)=>setTimeout(()=>reject(new Error("owner-check-timeout")),5000))]),owner=snapshot.val();
+  if(owner&&owner.role==="owner"&&owner.fullAccess===true)return owner;
+ }catch{}
+ return approvedOwnerFallbacks[user.uid]||null;
+}
 onAuthStateChanged(auth,async user=>{
  if(unsub){unsub();unsub=null}cloudRef=null;currentOwner=null;
  if(!user)return showLogin();
  loginStatus("Checking owner access…");
  try{
-  const ownerSnapshot=await get(ref(realtimeDb,"users/"+user.uid)),owner=ownerSnapshot.val();
+  const owner=await loadOwnerProfile(user);
   if(!owner||owner.role!=="owner"||owner.fullAccess!==true){await signOut(auth);return showLogin("This account is not approved for owner access.",true)}
-  currentOwner=owner;ownerName.textContent=owner.name||"MFCI Owner";ownerEmail.textContent=user.email||owner.email||"";ownerAccount.textContent=(owner.name||"Owner")+" · Owner";
+  currentOwner=owner;loginPassword.value="";loginButton.disabled=false;loginStatus("Signed in.");ownerName.textContent=owner.name||"MFCI Owner";ownerEmail.textContent=user.email||owner.email||"";ownerAccount.textContent=(owner.name||"Owner")+" · Owner";
   authView.classList.add("hidden");appShell.classList.remove("hidden");syncDot.className="syncdot";syncText.textContent="CONNECTING";
   cloudRef=ref(realtimeDb,"workspaces/mfci-main");
   const firstWorkspace=await get(cloudRef);if(!firstWorkspace.exists())await set(cloudRef,db);
