@@ -8,9 +8,11 @@ This app is currently a static installable web app. Firebase Hosting is designed
 
 ## Repository contents
 
-- `public/` — the app files
+- Root app files — the static installable web app served by Firebase Hosting
 - `firebase.json` — Firebase Hosting configuration
-- mfci-command-center — Firebase project ID placeholder
+- `database.rules.json` — owner-only Realtime Database rules
+- `firebase-config.js` — Firebase web app configuration (public client identifiers)
+- `.firebaserc` — MFCI Firebase project selection
 - `package.json` — optional Firebase CLI commands
 
 ## Deploy from a phone using GitHub and Firebase
@@ -29,11 +31,7 @@ In Firebase:
 
 Project settings → General → Project ID
 
-Edit `.firebaserc` and replace:
-
-`REPLACE_WITH_YOUR_FIREBASE_PROJECT_ID`
-
-with the exact Project ID.
+The repository is already configured for the `mfci-command-center` Firebase project.
 
 ### 3. Use regular Firebase Hosting
 
@@ -49,9 +47,7 @@ Choose **Get started** for Firebase Hosting.
 
 Use the GitHub integration offered under Firebase Hosting, and select the private `mfci-command-center` repository.
 
-Set the public directory to:
-
-`public`
+The public directory is the repository root (`.`), matching the current file layout.
 
 This repository does not require a build command because it is already a static app.
 
@@ -81,12 +77,12 @@ Open the hosted address in Safari → Share → Add to Home Screen.
 
 ## Current security status
 
-The app still supports local mode and optional Firebase configuration entered inside the interface. Before subcontractor access, invoice uploads, customer records, or shared cloud use, add:
+- Email/password authentication is required before the dashboard is shown.
+- Only users with an owner record under `/users/{uid}` and `fullAccess: true` are authorized.
+- Realtime Database rules deny access by default and restrict the shared `mfci-main` workspace to owners.
+- Password reset and persistent/session sign-in controls are included.
+- Local data is retained as an offline cache and is synchronized only after owner authorization.
 
-- Firebase Authentication
-- protected database rules
-- Cloud Storage rules
-- user roles
-- audit logs
+Cloud Storage is not used by the current build. Add Storage rules before introducing file uploads. Add audit logs before employee or subcontractor roles are enabled.
 
 Do not store bank, CRA, or brokerage passwords in the app.
