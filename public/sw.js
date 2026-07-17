@@ -1,4 +1,4 @@
-const CACHE = "mfci-command-center-v7";
+const CACHE = "mfci-command-center-v8";
 const ASSETS = [
   "/",
   "/index.html",
