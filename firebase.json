@@ -2,6 +2,9 @@
   "database": {
     "rules": "database.rules.json"
   },
+  "functions": {
+    "source": "functions"
+  },
   "hosting": {
     "public": "public",
     "ignore": [
@@ -54,6 +57,20 @@
       }
     ],
     "rewrites": [
+      {
+        "source": "/api/market",
+        "function": {
+          "functionId": "marketData",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/copilot",
+        "function": {
+          "functionId": "copilot",
+          "region": "us-central1"
+        }
+      },
       {
         "source": "**",
         "destination": "/index.html"
