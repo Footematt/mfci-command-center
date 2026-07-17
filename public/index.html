@@ -87,7 +87,7 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 <button class="secondary" onclick="go('jobs');show('jobForm')">Add job</button>
 <button class="secondary" onclick="go('expenses');show('expenseForm')">Add expense</button>
 <button class="secondary" onclick="go('documents')">Create document</button>
-<button class="secondary" onclick="go('copilot')">Ask AI copilot</button>
+<button class="secondary" onclick="go('investments');document.getElementById('copilotQuestion')?.focus()">Ask investment Copilot</button>
 </div>
 </section>
 
@@ -182,7 +182,7 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 </section>
 
 <section id="investments" class="page">
-<div class="section"><div><h2>MK Investments</h2><p>Portfolio value, overall gain or loss, and daily direction.</p></div><div class="actions"><button class="secondary" onclick="refreshMarketData()">Refresh prices</button><button class="primary" onclick="newInvestment()">New</button></div></div>
+<div class="section"><div><h2>MK Investments</h2><p>Live portfolio tracking and AI analysis in one organized workspace.</p></div><div class="actions"><button class="secondary" onclick="refreshMarketData()">Refresh prices</button><button class="primary" onclick="newInvestment()">New investment</button></div></div>
 <div class="grid stats">
 <div class="card"><div class="label">Total value</div><div class="value" id="invTotal">$0.00</div></div>
 <div class="card"><div class="label">Total invested</div><div class="value" id="invCost">$0.00</div></div>
@@ -198,24 +198,27 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 <div class="actions"><button id="investmentSaveButton" class="primary" onclick="saveInvestment()">Save investment</button><button class="secondary" onclick="closeInvestmentForm()">Cancel</button></div>
 </div>
 <div class="notice" style="margin-top:10px">Symbol-based holdings refresh through the secure MFCI server. Prices may be delayed and values are converted to CAD when supported. MK Investments tracks a portfolio only; it does not place trades or connect to a brokerage.</div>
-<div id="investmentList" class="list" style="margin-top:10px"></div>
-</section>
+<div class="section"><div><h3>Portfolio holdings</h3><p>Review, edit, and refresh the positions available to the Copilot.</p></div></div>
+<div id="investmentList" class="list"></div>
 
-<section id="copilot" class="page">
-<div class="section"><div><h2>MFCI AI Copilot</h2><p>Private business and portfolio analysis for approved owners.</p></div></div>
-<div class="notice">The copilot can analyze the current workspace but cannot send emails, change records, or place investments. Always verify financial, tax, legal, and safety decisions.</div>
+<div class="card" style="margin-top:14px">
+<div class="section" style="margin-top:0"><div><h2>MK Investments AI Copilot</h2><p>Ask questions while viewing the same live portfolio snapshot.</p></div></div>
+<div class="notice">The Copilot can analyze the current MFCI workspace but cannot send emails, change records, or place investments. Always verify financial, tax, legal, and safety decisions.</div>
 <div class="prompt-row" style="margin-top:10px">
+<button class="secondary" onclick="askCopilot('Analyze the MK Investments snapshot, explain the daily movement, and identify concentration risks.')">Portfolio review</button>
+<button class="secondary" onclick="askCopilot('Review my MK Investments holdings for short-term risk and unusual daily movement. Use only the available data and clearly state what additional research is needed.')">Short-term review</button>
+<button class="secondary" onclick="askCopilot('Review my MK Investments holdings for long-term diversification, concentration, and thesis risks. Separate known facts from assumptions.')">Long-term review</button>
 <button class="secondary" onclick="askCopilot('Summarize the business and list the three most important actions today.')">Daily summary</button>
 <button class="secondary" onclick="askCopilot('Review overdue invoices and suggest a practical collection priority.')">Overdue invoices</button>
 <button class="secondary" onclick="askCopilot('Review expenses by category and flag anything unusual.')">Expense review</button>
-<button class="secondary" onclick="askCopilot('Analyze the MK Investments snapshot, explain the daily movement, and identify concentration risks.')">Portfolio review</button>
 </div>
-<div id="copilotChat" class="chat" style="margin-top:10px"><div class="bubble assistant">I'm ready to analyze the current MFCI workspace. Choose a prompt or ask a question below.</div></div>
+<div id="copilotChat" class="chat" style="margin-top:10px"><div class="bubble assistant">I'm ready to analyze the current MFCI workspace and MK Investments portfolio. Choose a prompt or ask a question below.</div></div>
 <form id="copilotForm" class="copilot-compose form">
-<div class="field"><label for="copilotQuestion">Ask the copilot</label><textarea id="copilotQuestion" maxlength="2000" placeholder="Example: What should I follow up on today?"></textarea></div>
+<div class="field"><label for="copilotQuestion">Ask the investment Copilot</label><textarea id="copilotQuestion" maxlength="2000" placeholder="Example: What portfolio risks should I review today?"></textarea></div>
 <button id="copilotSend" class="primary" type="submit">Send</button>
 <div id="copilotStatus" class="market-status" role="status" aria-live="polite"></div>
 </form>
+</div>
 </section>
 
 <section id="more" class="page">
@@ -240,8 +243,7 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 <button data-page="jobs" onclick="go('jobs',this)">Jobs</button>
 <button data-page="expenses" onclick="go('expenses',this)">Expenses</button>
 <button data-page="documents" onclick="go('documents',this)">Docs</button>
-<button data-page="investments" onclick="go('investments',this)">MK Invest</button>
-<button data-page="copilot" onclick="go('copilot',this)">Copilot</button>
+<button data-page="investments" onclick="go('investments',this)">MK Investments</button>
 <button data-page="more" onclick="go('more',this)">More</button>
 </nav>
 </div>
