@@ -1,5 +1,6 @@
 "use strict";
 
+const {createHash}=require("crypto");
 const {initializeApp}=require("firebase-admin/app");
 const {getAuth}=require("firebase-admin/auth");
 const {getDatabase}=require("firebase-admin/database");
@@ -77,6 +78,38 @@ function extractOutputText(payload){
  const parts=[];for(const item of payload?.output||[])for(const content of item?.content||[])if(content?.type==="output_text"&&content.text)parts.push(content.text);return parts.join("\n").trim();
 }
 
+const advertisingCampaignSchema={
+ type:"object",additionalProperties:false,
+ properties:{
+  campaignName:{type:"string"},
+  strategy:{type:"string"},
+  callToAction:{type:"string"},
+  facebookPost:{type:"string"},
+  instagramPost:{type:"string"},
+  linkedinPost:{type:"string"},
+  reelScript:{type:"string"},
+  leadReply:{type:"string"},
+  schedule:{type:"array",minItems:3,maxItems:7,items:{type:"object",additionalProperties:false,properties:{day:{type:"string"},platform:{type:"string"},content:{type:"string"}},required:["day","platform","content"]}},
+  checklist:{type:"array",minItems:3,maxItems:8,items:{type:"string"}}
+ },
+ required:["campaignName","strategy","callToAction","facebookPost","instagramPost","linkedinPost","reelScript","leadReply","schedule","checklist"]
+};
+
+function cleanCampaignInput(value){
+ const source=value&&typeof value==="object"?value:{};
+ return{
+  goal:String(source.goal||"").trim().slice(0,160),
+  service:String(source.service||"").trim().slice(0,160),
+  serviceArea:String(source.serviceArea||"").trim().slice(0,160),
+  audience:String(source.audience||"").trim().slice(0,240),
+  offer:String(source.offer||"").trim().slice(0,240),
+  platforms:String(source.platforms||"").trim().slice(0,160),
+  tone:String(source.tone||"").trim().slice(0,100),
+  dailyBudget:String(source.dailyBudget||"").trim().slice(0,80),
+  notes:String(source.notes||"").trim().slice(0,600)
+ };
+}
+
 exports.copilot=onRequest({secrets:[openaiApiKey],timeoutSeconds:60},async(req,res)=>{
  if(!prepareRequest(req,res))return;
  try{
@@ -87,4 +120,34 @@ exports.copilot=onRequest({secrets:[openaiApiKey],timeoutSeconds:60},async(req,r
   const payload=await aiResponse.json();if(!aiResponse.ok){console.error("OpenAI response",aiResponse.status,payload?.error?.code||payload?.error?.type);return res.status(502).json({error:"The AI service could not complete that request. Please try again."})}
   const answer=extractOutputText(payload);if(!answer)return res.status(502).json({error:"The AI service returned an empty response."});return res.json({answer,model:payload.model||"gpt-5.4-mini"});
  }catch(error){console.error("copilot",error);return res.status(error.status||500).json({error:error.status?error.message:"The copilot is temporarily unavailable."})}
+});
+
+exports.advertisingPilot=onRequest({secrets:[openaiApiKey],timeoutSeconds:60},async(req,res)=>{
+ if(!prepareRequest(req,res))return;
+ try{
+  const{uid,owner}=await requireOwner(req);if(!allowRequest(uid,"advertising",6,60000))return res.status(429).json({error:"Please wait a moment before creating another campaign."});
+  const campaign=cleanCampaignInput(req.body?.campaign);if(!campaign.goal||!campaign.service||!campaign.serviceArea)return res.status(400).json({error:"Enter a goal, service, and service area."});
+  const apiKey=openaiApiKey.value();if(!apiKey)return res.status(503).json({error:"The AI advertising pilot has not been activated yet."});
+  const contextText=JSON.stringify(compactContext(req.body?.context)).slice(0,16000),campaignText=JSON.stringify(campaign);
+  const aiResponse=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:`Bearer ${apiKey}`,"Content-Type":"application/json"},body:JSON.stringify({
+   model:"gpt-5.4-mini",
+   instructions:[
+    "You are the private MFCI Advertising Pilot for the authenticated owners of M. Foote's Contracting Inc.",
+    "Create a practical social-media campaign pack intended to generate qualified contracting quote requests.",
+    "Use only facts supplied in the campaign brief and business snapshot. Never invent licences, awards, customer reviews, prices, discounts, guarantees, availability, project results, or before-and-after claims.",
+    "Write in clear Canadian English. Keep the requested service area exactly as supplied and do not recommend discriminatory or exclusionary audience targeting.",
+    "Include a direct but honest call to action. Prefer the business website mkenterprise.ca when a link is useful.",
+    "Create owner-review drafts only. Do not claim to have posted, purchased ads, contacted leads, or taken any external action.",
+    "Make each platform post meaningfully different. Keep hashtags relevant and restrained. The lead reply should ask for the location, scope, timing, photos, and best contact method without promising a price.",
+    "Return only the required structured campaign object."
+   ].join(" "),
+   input:`Owner: ${String(owner.name||"MFCI Owner").slice(0,80)}\nCampaign brief: ${campaignText}\n\nCurrent business snapshot (use only when relevant):\n${contextText}`,
+   text:{format:{type:"json_schema",name:"mfci_advertising_campaign",strict:true,schema:advertisingCampaignSchema}},
+   max_output_tokens:2200,store:false,
+   safety_identifier:`mfci_${createHash("sha256").update(uid).digest("hex").slice(0,32)}`
+  })});
+  const payload=await aiResponse.json();if(!aiResponse.ok){console.error("OpenAI advertising response",aiResponse.status,payload?.error?.code||payload?.error?.type);return res.status(502).json({error:"The AI service could not create that campaign. Please try again."})}
+  const output=extractOutputText(payload);let generated;try{generated=JSON.parse(output)}catch{console.error("Advertising output was not valid JSON");return res.status(502).json({error:"The AI service returned an incomplete campaign. Please try again."})}
+  return res.json({campaign:generated,model:payload.model||"gpt-5.4-mini"});
+ }catch(error){console.error("advertisingPilot",error);return res.status(error.status||500).json({error:error.status?error.message:"The advertising pilot is temporarily unavailable."})}
 });

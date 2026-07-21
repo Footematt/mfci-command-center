@@ -74,6 +74,13 @@
         }
       },
       {
+        "source": "/api/advertising-pilot",
+        "function": {
+          "functionId": "advertisingPilot",
+          "region": "us-central1"
+        }
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

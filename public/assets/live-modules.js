@@ -1,6 +1,8 @@
 const api=window.MFCI;
 const marketStatus=document.getElementById("marketStatus"),copilotForm=document.getElementById("copilotForm"),copilotChat=document.getElementById("copilotChat"),copilotQuestion=document.getElementById("copilotQuestion"),copilotSend=document.getElementById("copilotSend"),copilotStatus=document.getElementById("copilotStatus");
+const advertisingForm=document.getElementById("advertisingForm"),advertisingGenerate=document.getElementById("advertisingGenerate"),advertisingStatus=document.getElementById("advertisingStatus"),advertisingResults=document.getElementById("advertisingResults");
 let marketBusy=false,autoRefreshStarted=false;
+let lastAdvertisingCampaign=null;
 
 async function postOwnerApi(path,body){
  const user=api?.getAuth()?.currentUser;
@@ -48,3 +50,32 @@ async function sendCopilot(){
 }
 window.askCopilot=question=>{copilotQuestion.value=question;sendCopilot()};
 copilotForm?.addEventListener("submit",event=>{event.preventDefault();sendCopilot()});
+
+async function copyText(text){
+ if(navigator.clipboard?.writeText)return navigator.clipboard.writeText(text);
+ const area=document.createElement("textarea");area.value=text;area.style.position="fixed";area.style.opacity="0";document.body.appendChild(area);area.select();document.execCommand("copy");area.remove();
+}
+function campaignText(campaign){
+ const schedule=(campaign.schedule||[]).map(item=>`${item.day} — ${item.platform}\n${item.content}`).join("\n\n"),checklist=(campaign.checklist||[]).map(item=>`• ${item}`).join("\n");
+ return[ campaign.campaignName, "", "STRATEGY", campaign.strategy, "", "CALL TO ACTION", campaign.callToAction, "", "FACEBOOK", campaign.facebookPost, "", "INSTAGRAM", campaign.instagramPost, "", "LINKEDIN", campaign.linkedinPost, "", "SHORT VIDEO / REEL", campaign.reelScript, "", "NEW LEAD REPLY", campaign.leadReply, "", "POSTING SCHEDULE", schedule, "", "BEFORE PUBLISHING", checklist ].join("\n");
+}
+function renderAdvertisingCampaign(campaign){
+ lastAdvertisingCampaign=campaign;
+ const textFields={adCampaignName:campaign.campaignName||"Campaign pack",adStrategy:campaign.strategy,adCallToAction:campaign.callToAction,adFacebook:campaign.facebookPost,adInstagram:campaign.instagramPost,adLinkedIn:campaign.linkedinPost,adReel:campaign.reelScript,adLeadReply:campaign.leadReply};
+ Object.entries(textFields).forEach(([id,value])=>{const element=document.getElementById(id);if(element)element.textContent=value||""});
+ const schedule=document.getElementById("adSchedule");schedule.replaceChildren();(campaign.schedule||[]).forEach(item=>{const row=document.createElement("div");row.className="item";const content=document.createElement("div"),title=document.createElement("b"),details=document.createElement("p");title.textContent=`${item.day} · ${item.platform}`;details.textContent=item.content;content.append(title,details);row.append(content);schedule.append(row)});
+ const checklist=document.getElementById("adChecklist");checklist.replaceChildren();(campaign.checklist||[]).forEach(item=>{const row=document.createElement("div");row.className="item";row.textContent=`✓ ${item}`;checklist.append(row)});
+ advertisingResults.classList.remove("hidden");advertisingResults.scrollIntoView({behavior:"smooth",block:"start"});
+}
+advertisingForm?.addEventListener("submit",async event=>{
+ event.preventDefault();if(advertisingGenerate.disabled)return;
+ const campaign={goal:document.getElementById("adGoal").value,service:document.getElementById("adService").value.trim(),serviceArea:document.getElementById("adArea").value.trim(),audience:document.getElementById("adAudience").value.trim(),offer:document.getElementById("adOffer").value.trim(),platforms:document.getElementById("adPlatforms").value,tone:document.getElementById("adTone").value,dailyBudget:document.getElementById("adBudget").value.trim(),notes:document.getElementById("adNotes").value.trim()};
+ if(!campaign.service||!campaign.serviceArea){advertisingStatus.textContent="Enter the service and current service area.";advertisingStatus.className="campaign-status error";return}
+ advertisingGenerate.disabled=true;advertisingGenerate.textContent="Creating campaign…";advertisingStatus.textContent="The Advertising Pilot is preparing your campaign pack…";advertisingStatus.className="campaign-status";
+ try{const payload=await postOwnerApi("/api/advertising-pilot",{campaign,context:copilotContext()});renderAdvertisingCampaign(payload.campaign);advertisingStatus.textContent="Campaign pack created. Review every draft before publishing."}
+ catch(error){advertisingStatus.textContent=error.message;advertisingStatus.className="campaign-status error"}
+ finally{advertisingGenerate.disabled=false;advertisingGenerate.textContent="Create campaign pack"}
+});
+document.getElementById("advertisingClear")?.addEventListener("click",()=>{lastAdvertisingCampaign=null;advertisingResults.classList.add("hidden");advertisingStatus.textContent="";advertisingStatus.className="campaign-status"});
+document.getElementById("copyCampaignPack")?.addEventListener("click",async event=>{if(!lastAdvertisingCampaign)return;await copyText(campaignText(lastAdvertisingCampaign));const old=event.currentTarget.textContent;event.currentTarget.textContent="Copied";setTimeout(()=>event.currentTarget.textContent=old,1400)});
+document.querySelectorAll("[data-copy-target]").forEach(button=>button.addEventListener("click",async()=>{const target=document.getElementById(button.dataset.copyTarget);if(!target)return;await copyText(target.textContent);const old=button.textContent;button.textContent="Copied";setTimeout(()=>button.textContent=old,1400)}));

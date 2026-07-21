@@ -44,6 +44,7 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 .market-status{font-size:.74rem;margin:8px 0;color:var(--muted)}.market-status.live{color:#2f7a3b}.market-status.error{color:var(--red)}
 .chat{display:grid;gap:10px;max-height:52vh;overflow:auto;padding:4px}.bubble{max-width:88%;padding:11px 13px;border-radius:14px;white-space:pre-wrap;line-height:1.45}.bubble.user{justify-self:end;background:var(--g);color:#fff}.bubble.assistant{justify-self:start;background:#fff;border:1px solid var(--line)}
 .prompt-row{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px}.prompt-row button{white-space:nowrap}.copilot-compose{position:sticky;bottom:74px;background:var(--paper);padding-top:10px}.copilot-compose textarea{min-height:70px}
+.campaign-grid{display:grid;gap:10px}.campaign-copy{position:relative}.campaign-copy .secondary{margin-top:9px}.campaign-text{white-space:pre-wrap;line-height:1.5;color:var(--ink);font-size:.9rem}.campaign-list{display:grid;gap:8px;margin-top:9px}.campaign-list .item{background:#f8faf8;border:1px solid var(--line);border-radius:10px;padding:10px}.campaign-list .item p{margin:3px 0 0}.campaign-status{min-height:20px;font-size:.78rem;color:var(--muted)}.campaign-status.error{color:var(--red)}
 @media(min-width:760px){.stats{grid-template-columns:repeat(4,1fr)}.two{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -88,6 +89,7 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 <button class="secondary" onclick="go('jobs');show('jobForm')">Add job</button>
 <button class="secondary" onclick="go('expenses');show('expenseForm')">Add expense</button>
 <button class="secondary" onclick="go('documents')">Create document</button>
+<button class="secondary" onclick="go('advertising');document.getElementById('adService')?.focus()">Create social media campaign</button>
 <button class="secondary" onclick="go('investments');document.getElementById('copilotQuestion')?.focus()">Ask investment Copilot</button>
 </div>
 </section>
@@ -202,6 +204,36 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 <div id="documentList" class="list"></div>
 </section>
 
+<section id="advertising" class="page">
+<div class="section"><div><h2>AI Advertising Pilot</h2><p>Create truthful, ready-to-review social campaigns designed to generate contracting quote requests.</p></div></div>
+<div class="notice">The pilot creates drafts only. Review every claim, photo, price, service area, and offer before publishing or spending money. It will not post to social media or purchase ads without a future approved connection.</div>
+<form id="advertisingForm" class="card form" style="margin-top:10px">
+<div class="row"><div class="field"><label for="adGoal">Campaign goal</label><select id="adGoal"><option>Get more quote requests</option><option>Promote a specific service</option><option>Fill an opening in the schedule</option><option>Build local awareness</option><option>Reach builders and property managers</option></select></div><div class="field"><label for="adService">Service to advertise</label><input id="adService" maxlength="160" placeholder="Example: decks, fencing, renovations" required></div></div>
+<div class="row"><div class="field"><label for="adArea">Service area</label><input id="adArea" maxlength="160" placeholder="Cities or region you currently serve" required></div><div class="field"><label for="adPlatforms">Platforms</label><select id="adPlatforms"><option>Facebook, Instagram and LinkedIn</option><option>Facebook and Instagram</option><option>Facebook local groups</option><option>Instagram</option><option>LinkedIn</option></select></div></div>
+<div class="field"><label for="adAudience">Ideal customer</label><input id="adAudience" maxlength="240" placeholder="Example: homeowners planning an outdoor upgrade"></div>
+<div class="field"><label for="adOffer">Offer or reason to contact you</label><input id="adOffer" maxlength="240" placeholder="Example: request a written quote — do not invent a discount"></div>
+<div class="row"><div class="field"><label for="adTone">Tone</label><select id="adTone"><option>Professional and approachable</option><option>Direct and practical</option><option>Friendly and local</option><option>Premium craftsmanship</option></select></div><div class="field"><label for="adBudget">Optional daily ad budget</label><input id="adBudget" maxlength="80" placeholder="Example: $15 CAD per day"></div></div>
+<div class="field"><label for="adNotes">Project details, seasonal angle, or instructions</label><textarea id="adNotes" maxlength="600" placeholder="Only include facts the business can support."></textarea></div>
+<div class="actions"><button id="advertisingGenerate" class="primary" type="submit">Create campaign pack</button><button id="advertisingClear" class="secondary" type="button">Clear results</button></div>
+<div id="advertisingStatus" class="campaign-status" role="status" aria-live="polite"></div>
+</form>
+
+<div id="advertisingResults" class="hidden" style="margin-top:14px">
+<div class="section"><div><h2 id="adCampaignName">Campaign pack</h2><p>Copy individual drafts or the complete pack, then review before publishing.</p></div><button id="copyCampaignPack" class="secondary" type="button">Copy complete pack</button></div>
+<div class="grid two campaign-grid">
+<div class="card campaign-copy"><h3>Strategy</h3><div id="adStrategy" class="campaign-text"></div><button class="secondary" type="button" data-copy-target="adStrategy">Copy strategy</button></div>
+<div class="card campaign-copy"><h3>Call to action</h3><div id="adCallToAction" class="campaign-text"></div><button class="secondary" type="button" data-copy-target="adCallToAction">Copy call to action</button></div>
+<div class="card campaign-copy"><h3>Facebook post</h3><div id="adFacebook" class="campaign-text"></div><button class="secondary" type="button" data-copy-target="adFacebook">Copy Facebook post</button></div>
+<div class="card campaign-copy"><h3>Instagram post</h3><div id="adInstagram" class="campaign-text"></div><button class="secondary" type="button" data-copy-target="adInstagram">Copy Instagram post</button></div>
+<div class="card campaign-copy"><h3>LinkedIn post</h3><div id="adLinkedIn" class="campaign-text"></div><button class="secondary" type="button" data-copy-target="adLinkedIn">Copy LinkedIn post</button></div>
+<div class="card campaign-copy"><h3>Short video / Reel script</h3><div id="adReel" class="campaign-text"></div><button class="secondary" type="button" data-copy-target="adReel">Copy video script</button></div>
+<div class="card campaign-copy"><h3>Reply to a new lead</h3><div id="adLeadReply" class="campaign-text"></div><button class="secondary" type="button" data-copy-target="adLeadReply">Copy lead reply</button></div>
+</div>
+<div class="card" style="margin-top:10px"><h3>Posting schedule</h3><div id="adSchedule" class="campaign-list"></div></div>
+<div class="card" style="margin-top:10px"><h3>Before publishing</h3><div id="adChecklist" class="campaign-list"></div></div>
+</div>
+</section>
+
 <section id="investments" class="page">
 <div class="section"><div><h2>MK Investments</h2><p>Live portfolio tracking and AI analysis in one organized workspace.</p></div><div class="actions"><button class="secondary" onclick="refreshMarketData()">Refresh prices</button><button class="primary" onclick="newInvestment()">New investment</button></div></div>
 <div class="grid stats">
@@ -264,6 +296,7 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 <button data-page="jobs" onclick="go('jobs',this)">Jobs</button>
 <button data-page="expenses" onclick="go('expenses',this)">Expenses</button>
 <button data-page="documents" onclick="go('documents',this)">Docs</button>
+<button data-page="advertising" onclick="go('advertising',this)">Advertising</button>
 <button data-page="investments" onclick="go('investments',this)">MK Investments</button>
 <button data-page="more" onclick="go('more',this)">More</button>
 </nav>
