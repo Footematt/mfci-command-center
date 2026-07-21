@@ -57,4 +57,52 @@ form.addEventListener("submit", (event) => {
   window.location.href = `mailto:mfootescontractinginc@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 });
 
+const galleryItems = Array.from(document.querySelectorAll(".project-gallery-item"));
+const galleryFilters = Array.from(document.querySelectorAll("[data-gallery-filter]"));
+const galleryToggle = document.querySelector("#galleryToggle");
+const galleryStatus = document.querySelector("#galleryStatus");
+const galleryLimit = 12;
+let activeGalleryFilter = "all";
+let galleryExpanded = false;
+
+function renderGallery() {
+  const matches = galleryItems.filter(
+    (item) => activeGalleryFilter === "all" || item.dataset.category === activeGalleryFilter,
+  );
+
+  let visibleIndex = 0;
+  galleryItems.forEach((item) => {
+    const matchesFilter = activeGalleryFilter === "all" || item.dataset.category === activeGalleryFilter;
+    const shouldShow = matchesFilter && (galleryExpanded || visibleIndex < galleryLimit);
+    item.hidden = !shouldShow;
+    if (matchesFilter) visibleIndex += 1;
+  });
+
+  const visibleCount = galleryExpanded ? matches.length : Math.min(matches.length, galleryLimit);
+  galleryStatus.textContent = `Showing ${visibleCount} of ${matches.length} project photos`;
+  galleryToggle.hidden = matches.length <= galleryLimit;
+  galleryToggle.setAttribute("aria-expanded", String(galleryExpanded));
+  galleryToggle.textContent = galleryExpanded ? "Show fewer photos" : `Show all ${matches.length} photos`;
+}
+
+galleryFilters.forEach((button) => {
+  button.addEventListener("click", () => {
+    activeGalleryFilter = button.dataset.galleryFilter;
+    galleryExpanded = false;
+    galleryFilters.forEach((filterButton) => {
+      const isActive = filterButton === button;
+      filterButton.classList.toggle("active", isActive);
+      filterButton.setAttribute("aria-pressed", String(isActive));
+    });
+    renderGallery();
+  });
+});
+
+galleryToggle.addEventListener("click", () => {
+  galleryExpanded = !galleryExpanded;
+  renderGallery();
+});
+
+renderGallery();
+
 document.querySelector("#year").textContent = new Date().getFullYear();
