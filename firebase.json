@@ -96,6 +96,15 @@
       ],
       "cleanUrls": true,
       "trailingSlash": false,
+      "rewrites": [
+        {
+          "source": "/api/estimate",
+          "function": {
+            "functionId": "publicEstimate",
+            "region": "us-central1"
+          }
+        }
+      ],
       "headers": [
         {
           "source": "/",

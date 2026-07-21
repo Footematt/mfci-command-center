@@ -77,6 +77,7 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 <div class="card"><div class="label">HST collected</div><div class="value" id="sHST">$0.00</div></div>
 <div class="card"><div class="label">YTD subtotal collected</div><div class="value" id="sYTD">$0.00</div></div>
 <div class="card"><div class="label">Active jobs</div><div class="value" id="sJobs">0</div></div>
+<div class="card"><div class="label">New website leads</div><div class="value" id="sLeads">0</div></div>
 </div>
 <button type="button" class="card investment-home" onclick="go('investments')"><span><span class="label">MK Investments</span><br><span class="value" id="sInvestment">$0.00</span></span><span class="amount"><span class="label">Average daily trend</span><br><span id="sInvestmentTrend" class="trend flat">No change</span></span></button>
 <div class="section"><div><h2>Priority queue</h2><p>Items requiring attention.</p></div></div>
@@ -86,12 +87,19 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 <button class="primary" onclick="go('invoices');newQuote()">Create signed quote</button>
 <button class="secondary" onclick="go('invoices');newInvoice()">Create invoice</button>
 <button class="secondary" onclick="go('customers');show('customerForm')">Add customer</button>
+<button class="secondary" onclick="go('leads')">View website leads</button>
 <button class="secondary" onclick="go('jobs');show('jobForm')">Add job</button>
 <button class="secondary" onclick="go('expenses');show('expenseForm')">Add expense</button>
 <button class="secondary" onclick="go('documents')">Create document</button>
 <button class="secondary" onclick="go('advertising');document.getElementById('adService')?.focus()">Create social media campaign</button>
 <button class="secondary" onclick="go('investments');document.getElementById('copilotQuestion')?.focus()">Ask investment Copilot</button>
 </div>
+</section>
+
+<section id="leads" class="page">
+<div class="section"><div><h2>Website leads</h2><p>Estimate requests sent directly from mkenterprise.ca.</p></div></div>
+<div class="notice">New requests appear here with contact details, project information, and any attached photos.</div>
+<div id="leadList" class="list" style="margin-top:9px"></div>
 </section>
 
 <section id="customers" class="page">
@@ -291,6 +299,7 @@ input,select,textarea{width:100%;border:1px solid #ccd8cd;border-radius:10px;bac
 
 <nav>
 <button class="active" data-page="home" onclick="go('home',this)">Home</button>
+<button data-page="leads" onclick="go('leads',this)">Leads</button>
 <button data-page="customers" onclick="go('customers',this)">Customers</button>
 <button data-page="invoices" onclick="go('invoices',this)">Invoices</button>
 <button data-page="jobs" onclick="go('jobs',this)">Jobs</button>
@@ -311,6 +320,7 @@ import {firebaseConfig} from "./firebase-config.js";
 const firebaseApp=window.firebase.initializeApp(firebaseConfig),auth=window.firebase.auth(),realtimeDb=window.firebase.database();
 const browserLocalPersistence=window.firebase.auth.Auth.Persistence.LOCAL,browserSessionPersistence=window.firebase.auth.Auth.Persistence.SESSION;
 const ref=(database,path)=>database.ref(path),get=reference=>reference.once("value"),set=(reference,value)=>reference.set(value);
+const update=(reference,value)=>reference.update(value),remove=reference=>reference.remove();
 const onValue=(reference,next,error)=>{reference.on("value",next,error);return()=>reference.off("value",next)};
 const onAuthStateChanged=(instance,next)=>instance.onAuthStateChanged(next),signOut=instance=>instance.signOut();
 const setPersistence=(instance,persistence)=>instance.setPersistence(persistence),signInWithEmailAndPassword=(instance,email,password)=>instance.signInWithEmailAndPassword(email,password);
@@ -318,8 +328,8 @@ const sendPasswordResetEmail=(instance,email)=>instance.sendPasswordResetEmail(e
 
 const emptyDb=()=>({meta:{schemaVersion:6},customers:[],quotes:[],invoices:[],jobs:[],expenses:[],documents:[],investments:[]});
 const normalizeDb=value=>{let data=value&&typeof value==="object"?value:{};return{meta:{schemaVersion:6},customers:Array.isArray(data.customers)?data.customers:[],quotes:Array.isArray(data.quotes)?data.quotes:[],invoices:Array.isArray(data.invoices)?data.invoices:[],jobs:Array.isArray(data.jobs)?data.jobs:[],expenses:Array.isArray(data.expenses)?data.expenses:[],documents:Array.isArray(data.documents)?data.documents:[],investments:Array.isArray(data.investments)?data.investments:[]}};
-let db=normalizeDb(JSON.parse(localStorage.getItem("mfci_sync_db")||"null")||emptyDb());
-let cloudRef=null,unsub=null,currentOwner=null,paymentInvoiceId=null,editingInvoiceId=null,editingExpenseId=null,editingInvestmentId=null,editingQuoteId=null,quoteSupersedesId=null;
+let db=normalizeDb(JSON.parse(localStorage.getItem("mfci_sync_db")||"null")||emptyDb()),publicLeads=[];
+let cloudRef=null,unsub=null,unsubLeads=null,currentOwner=null,paymentInvoiceId=null,editingInvoiceId=null,editingExpenseId=null,editingInvestmentId=null,editingQuoteId=null,quoteSupersedesId=null;
 const $=id=>document.getElementById(id),money=n=>new Intl.NumberFormat("en-CA",{style:"currency",currency:"CAD"}).format(Number(n||0)),cents=n=>Math.round(Number(n||0)*100),today=()=>new Date().toISOString().slice(0,10);
 const DEFAULT_INVOICE_TERMS="Payment is due within 7 days. After 7 days, Net 30 interest terms and applicable charges may apply.";
 const DEFAULT_QUOTE_TERMS="This quote becomes a work authorization only when signed by an authorized customer, property owner, builder, or representative. Work outside the written scope is excluded and requires a written change order. The stated deposit is due before scheduling. Remaining invoices are due within 7 days unless a different signed schedule applies. Overdue amounts may bear interest at 2% per month (24% per annum), or the maximum lawful rate if lower, plus reasonable collection costs where legally recoverable. MFCI does not waive any available payment, contract, trust, adjudication, lien, or court remedy. Statutory notice and lien deadlines are not extended by this agreement.";
@@ -333,6 +343,11 @@ async function persist(){
  if(cloudRef){try{await set(cloudRef,db)}catch(e){syncDot.className="syncdot off";syncText.textContent="SYNC ERROR";alert("Could not save to the secure workspace. Please try again.")}}
 }
 window.saveCustomer=async()=>{if(!cName.value.trim())return alert("Enter a customer name.");db.customers.push({id:crypto.randomUUID(),name:cName.value.trim(),contact:cContact.value.trim(),phone:cPhone.value.trim(),email:cEmail.value.trim(),address:cAddress.value.trim()});["cName","cContact","cPhone","cEmail","cAddress"].forEach(x=>$(x).value="");hide("customerForm");await persist()};
+window.markLead=async(id,status)=>{await update(ref(realtimeDb,`publicLeads/${id}`),{status,updatedAt:new Date().toISOString()})};
+window.addLeadCustomer=async id=>{let lead=publicLeads.find(item=>item.id===id);if(!lead)return alert("Lead not found.");if(!db.customers.some(customer=>String(customer.email||"").toLowerCase()===String(lead.email||"").toLowerCase()))db.customers.push({id:crypto.randomUUID(),name:lead.name,contact:lead.name,phone:lead.phone,email:lead.email,address:lead.location||""});await persist();await markLead(id,"converted");go("customers");alert("Customer added from the website lead.")};
+window.deleteLead=async id=>{if(!confirm("Delete this website lead and its attached photos?"))return;await Promise.all([remove(ref(realtimeDb,`publicLeads/${id}`)),remove(ref(realtimeDb,`publicLeadImages/${id}`))])};
+window.replyToLead=id=>{let lead=publicLeads.find(item=>item.id===id);if(!lead)return alert("Lead not found.");openBusinessEmail(lead.email,`Your ${lead.service||"project"} estimate request`,[`Hello ${lead.name||""},`,"","Thank you for contacting M. Foote's Contracting Inc. about your project.","","To help us plan the next step, please let us know your preferred time for a call or site visit.","","Thank you,","MFCI Contracting Inc.",BUSINESS_EMAIL].join("\n"))};
+window.viewLeadPhotos=async id=>{let viewer=window.open("","_blank");if(!viewer)return alert("Allow pop-ups to view the project photos.");viewer.document.write("<p style='font-family:Arial;padding:24px'>Loading project photos…</p>");try{let snapshot=await get(ref(realtimeDb,`publicLeadImages/${id}`)),images=snapshot.val();if(!Array.isArray(images)||!images.length){viewer.document.body.innerHTML="<p style='font-family:Arial;padding:24px'>No photos were attached.</p>";return}viewer.document.open();viewer.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Lead photos</title><style>body{margin:0;padding:20px;background:#10281f;display:grid;gap:18px}img{max-width:100%;max-height:90vh;margin:auto;border-radius:10px;box-shadow:0 15px 45px rgba(0,0,0,.35)}</style></head><body>${images.map(image=>`<img src="${image.data}" alt="Customer project photo">`).join("")}</body></html>`);viewer.document.close()}catch{viewer.document.body.innerHTML="<p style='font-family:Arial;padding:24px'>The photos could not be opened.</p>"}};
 const clearInvoiceFields=()=>{["iNumber","iCustomer","iProperty","iDays","iContractors","iSubtotal","iNotes","iDue"].forEach(x=>$(x).value="");iHstRate.value="13";iDate.value=today();iTerms.value=DEFAULT_INVOICE_TERMS};
 window.newInvoice=()=>{editingInvoiceId=null;clearInvoiceFields();$("invoiceFormTitle").textContent="New invoice";$("invoiceSaveButton").textContent="Save invoice";hide("paymentForm");show("invoiceForm");iNumber.focus()};
 window.closeInvoiceForm=()=>{editingInvoiceId=null;clearInvoiceFields();hide("invoiceForm")};
@@ -439,9 +454,16 @@ const investmentSummary=()=>{let items=db.investments||[],total=items.reduce((su
 const trendText=value=>Math.abs(value)<.005?"No change":`${value>0?"▲":"▼"} ${Math.abs(value).toFixed(2)}%`;
 const applyTrend=(element,value)=>{element.textContent=trendText(value);element.className=(element.classList.contains("value")?"value ":"")+"trend "+(value>.005?"up":value<-.005?"down":"flat")};
 
+function renderLeads(){
+ if(!window.leadList||!window.sLeads)return;
+ const ordered=[...publicLeads].sort((a,b)=>String(b.createdAt||"").localeCompare(String(a.createdAt||""))),newCount=ordered.filter(lead=>(lead.status||"new")==="new").length;
+ sLeads.textContent=newCount;leadList.innerHTML=ordered.length?"":'<div class="card empty">No website estimate requests yet.</div>';
+ ordered.forEach(lead=>{let status=lead.status||"new",statusText=status==="converted"?"Added as customer":status==="contacted"?"Contacted":"New request",when=lead.createdAt?new Date(lead.createdAt).toLocaleString("en-CA"):"";leadList.innerHTML+=`<div class="card item"><div><b>${esc(lead.name||"Website lead")}</b><br><small>${esc(lead.service||"")}${lead.location?" · "+esc(lead.location):""}</small><div class="status ${status==="new"?"partial":"paid"}">${statusText}</div><p><b>${esc(lead.phone||"")}</b><br>${esc(lead.email||"")}<br><small>${esc(when)}</small></p><p>${esc(lead.details||"")}</p><div class="actions"><button class="primary" onclick="replyToLead('${lead.id}')">Reply by email</button><a class="secondary" href="tel:${esc(lead.phone||"")}">Call</a>${Number(lead.attachmentCount)>0?`<button class="secondary" onclick="viewLeadPhotos('${lead.id}')">View ${Number(lead.attachmentCount)} photo${Number(lead.attachmentCount)===1?"":"s"}</button>`:""}${status==="new"?`<button class="secondary" onclick="markLead('${lead.id}','contacted')">Mark contacted</button>`:""}<button class="secondary" onclick="addLeadCustomer('${lead.id}')">Add customer</button><button class="danger" onclick="deleteLead('${lead.id}')">Delete</button></div></div></div>`});
+}
+
 function render(){
  let ar=db.invoices.reduce((s,i)=>s+Math.max(0,i.total-i.paid),0),od=db.invoices.filter(i=>i.due&&i.due<today()&&i.paid<i.total).reduce((s,i)=>s+i.total-i.paid,0),hst=db.invoices.reduce((s,i)=>s+i.hst,0),year=String(new Date().getFullYear()),ytd=db.invoices.filter(i=>String(i.date||"").startsWith(year)).reduce((s,i)=>{let total=Number(i.total||0),paid=Math.min(Math.max(0,Number(i.paid||0)),total);return s+(total>0?Number(i.subtotal||0)*paid/total:0)},0),jobs=db.jobs.filter(j=>j.status==="Active").length;
- sAR.textContent=money(ar);sOD.textContent=money(od);sHST.textContent=money(hst);sYTD.textContent=money(ytd);sJobs.textContent=jobs;
+ sAR.textContent=money(ar);sOD.textContent=money(od);sHST.textContent=money(hst);sYTD.textContent=money(ytd);sJobs.textContent=jobs;renderLeads();
  priority.innerHTML="";let urgent=db.invoices.filter(i=>i.due&&i.due<today()&&cents(i.paid)<cents(i.total));if(!urgent.length)priority.innerHTML='<div class="card empty">Nothing urgent.</div>';urgent.forEach(i=>{let overdue=daysOverdue(i.due);priority.innerHTML+=`<div class="card item"><div><b>Invoice ${i.number} overdue</b><br><small>${i.customer} · ${overdue} day${overdue===1?"":"s"} overdue</small></div><div class="amount">${money(Math.max(0,cents(i.total)-cents(i.paid))/100)}</div></div>`});
  customerList.innerHTML=db.customers.length?"":'<div class="card empty">No customers yet.</div>';db.customers.forEach(c=>customerList.innerHTML+=`<div class="card item"><div><b>${c.name}</b><br><small>${c.contact||""} ${c.phone||""}</small><p>${c.email||""}<br>${c.address||""}</p><button class="danger" onclick="delItem('customers','${c.id}')">Delete</button></div></div>`);
  quoteList.innerHTML=(db.quotes&&db.quotes.length)?"":'<div class="card empty">No quotes yet. Create a detailed quote and obtain a signature before work begins.</div>';
@@ -479,7 +501,7 @@ async function loadOwnerProfile(user){
  return approvedOwnerFallbacks[user.uid]||null;
 }
 onAuthStateChanged(auth,async user=>{
- if(unsub){unsub();unsub=null}cloudRef=null;currentOwner=null;
+ if(unsub){unsub();unsub=null}if(unsubLeads){unsubLeads();unsubLeads=null}cloudRef=null;currentOwner=null;publicLeads=[];
  if(!user)return showLogin();
  loginStatus("Checking owner access…");
  try{
@@ -490,6 +512,7 @@ onAuthStateChanged(auth,async user=>{
   cloudRef=ref(realtimeDb,"workspaces/mfci-main");
   const firstWorkspace=await get(cloudRef);if(!firstWorkspace.exists())await set(cloudRef,db);
   unsub=onValue(cloudRef,snapshot=>{db=normalizeDb(snapshot.val());localStorage.setItem("mfci_sync_db",JSON.stringify(db));syncDot.className="syncdot live";syncText.textContent="LIVE SYNC";render();window.dispatchEvent(new CustomEvent("mfci:data-ready"))},()=>{syncDot.className="syncdot off";syncText.textContent="SYNC ERROR"});
+  unsubLeads=onValue(ref(realtimeDb,"publicLeads"),snapshot=>{let value=snapshot.val()||{};publicLeads=Object.values(value);renderLeads()},()=>{publicLeads=[];renderLeads()});
  }catch(e){await signOut(auth);showLogin("Owner access could not be verified. Please try again.",true)}
 });
 iDate.value=today();eDate.value=today();jStart.value=today();dDate.value=today();qDate.value=today();qExpiry.value=addDays(today(),30);qTerms.value=DEFAULT_QUOTE_TERMS;setupSignature();setupQuoteSignature();loadTemplateFields();render();

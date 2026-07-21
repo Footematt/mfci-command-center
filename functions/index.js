@@ -18,6 +18,12 @@ const allowedOrigins=new Set([
  "https://mfci-command-center.web.app",
  "https://mfci-command-center.firebaseapp.com"
 ]);
+const publicOrigins=new Set([
+ "https://mkenterprise.ca",
+ "https://www.mkenterprise.ca",
+ "https://mkenterprise-public.web.app",
+ "https://mkenterprise-public.firebaseapp.com"
+]);
 const marketCache=new Map(),requestWindows=new Map();
 
 function prepareRequest(req,res){
@@ -77,6 +83,41 @@ function extractOutputText(payload){
  if(typeof payload?.output_text==="string"&&payload.output_text.trim())return payload.output_text.trim();
  const parts=[];for(const item of payload?.output||[])for(const content of item?.content||[])if(content?.type==="output_text"&&content.text)parts.push(content.text);return parts.join("\n").trim();
 }
+
+function preparePublicRequest(req,res){
+ const origin=req.get("origin");
+ if(origin&&!publicOrigins.has(origin)){res.status(403).json({error:"Origin is not allowed."});return false}
+ if(origin)res.set("Access-Control-Allow-Origin",origin);
+ res.set("Vary","Origin");res.set("Access-Control-Allow-Headers","Content-Type");res.set("Access-Control-Allow-Methods","POST, OPTIONS");
+ if(req.method==="OPTIONS"){res.status(204).send("");return false}
+ if(req.method!=="POST"){res.status(405).json({error:"POST is required."});return false}
+ return true;
+}
+
+const cleanLeadText=(value,max)=>String(value||"").replace(/[\u0000-\u001f\u007f]/g," ").replace(/\s+/g," ").trim().slice(0,max);
+function cleanLeadImage(value){
+ const source=value&&typeof value==="object"?value:{},name=cleanLeadText(source.name,120),data=String(source.data||"");
+ const match=data.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);if(!match)return null;
+ const byteLength=Buffer.byteLength(match[2],"base64");if(byteLength<1||byteLength>450000)return null;
+ return{name:name||"project-photo",type:match[1],data:`data:${match[1]};base64,${match[2]}`,bytes:byteLength};
+}
+
+exports.publicEstimate=onRequest({timeoutSeconds:30,maxInstances:4},async(req,res)=>{
+ if(!preparePublicRequest(req,res))return;
+ try{
+  const body=req.body&&typeof req.body==="object"?req.body:{};
+  if(cleanLeadText(body.website,120))return res.status(200).json({ok:true});
+  const startedAt=Number(body.startedAt||0);if(!startedAt||Date.now()-startedAt<1800)return res.status(400).json({error:"Please review your request and try again."});
+  const name=cleanLeadText(body.name,100),phone=cleanLeadText(body.phone,40),email=cleanLeadText(body.email,160).toLowerCase(),location=cleanLeadText(body.location,160),service=cleanLeadText(body.service,180),details=cleanLeadText(body.details,3000);
+  if(name.length<2||phone.length<7||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!service||details.length<10||body.consent!==true)return res.status(400).json({error:"Please complete your name, phone, email, service, project details, and consent."});
+  const ip=String(req.ip||req.get("x-forwarded-for")||"unknown").split(",")[0].trim(),ipKey=createHash("sha256").update(ip).digest("hex").slice(0,32);
+  if(!allowRequest(ipKey,"public-estimate",5,60*60*1000))return res.status(429).json({error:"Too many requests were sent from this connection. Please call or try again later."});
+  const images=(Array.isArray(body.images)?body.images:[]).slice(0,3).map(cleanLeadImage).filter(Boolean),database=getDatabase(),leadRef=database.ref("publicLeads").push(),leadId=leadRef.key,createdAt=new Date().toISOString();
+  const lead={id:leadId,name,phone,email,location,service,details,status:"new",createdAt,attachmentCount:images.length,attachmentNames:images.map(image=>image.name),consent:body.consent===true,source:"mkenterprise.ca",userAgent:cleanLeadText(req.get("user-agent"),240)};
+  await Promise.all([leadRef.set(lead),images.length?database.ref(`publicLeadImages/${leadId}`).set(images):Promise.resolve()]);
+  return res.status(201).json({ok:true,id:leadId,message:"Your estimate request was received."});
+ }catch(error){console.error("publicEstimate",error);return res.status(500).json({error:"Your request could not be sent right now. Please call or try again."})}
+});
 
 const advertisingCampaignSchema={
  type:"object",additionalProperties:false,

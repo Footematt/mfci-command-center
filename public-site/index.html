@@ -21,6 +21,29 @@
     <link rel="preload" href="assets/hero-web.jpg" as="image" fetchpriority="high" />
     <link rel="stylesheet" href="styles.css" />
     <script src="app.js" defer></script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "HomeAndConstructionBusiness",
+        "name": "M. Foote's Contracting Inc.",
+        "alternateName": "MK Enterprise",
+        "url": "https://mkenterprise.ca/",
+        "image": "https://mkenterprise.ca/assets/hero-web.jpg",
+        "telephone": ["+1-647-213-4236", "+1-705-774-2296"],
+        "email": "mfootescontractinginc@gmail.com",
+        "areaServed": ["Greater Toronto Area", "Muskoka District Municipality", "Rosseau, Ontario"],
+        "hasOfferCatalog": {
+          "@type": "OfferCatalog",
+          "name": "Contracting and property services",
+          "itemListElement": [
+            {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Green cleaning"}},
+            {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Stone masonry and hardscape"}},
+            {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Carpentry"}},
+            {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Interior renovations"}}
+          ]
+        }
+      }
+    </script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to main content</a>
@@ -105,7 +128,7 @@
                 <span class="service-number">01</span>
                 <h3>Green cleaning</h3>
                 <p>Residential and commercial deep cleaning, scheduled service, renovation cleanup, cottages, short-term rentals, and yard cleanup.</p>
-                <a href="#contact" data-service-link="Green cleaning">Ask about cleaning <span aria-hidden="true">→</span></a>
+                <div class="service-card-links"><a href="services/green-cleaning.html">Explore cleaning</a><a href="#contact" data-service-link="Green cleaning">Request an estimate <span aria-hidden="true">→</span></a></div>
               </div>
             </article>
 
@@ -115,7 +138,7 @@
                 <span class="service-number">02</span>
                 <h3>Stone Masonry and Hardscape</h3>
                 <p>Patios, walkways, stairs, retaining walls, flower beds, outdoor kitchens, and fireplaces in manufactured or natural stone.</p>
-                <a href="#contact" data-service-link="Stone Masonry and Hardscape">Ask about stone masonry and hardscape <span aria-hidden="true">→</span></a>
+                <div class="service-card-links"><a href="services/stone-masonry-hardscape.html">Explore stonework</a><a href="#contact" data-service-link="Stone Masonry and Hardscape">Request an estimate <span aria-hidden="true">→</span></a></div>
               </div>
             </article>
 
@@ -129,7 +152,7 @@
                   <li>Decks</li>
                   <li>Fences &amp; gates</li>
                 </ul>
-                <a href="#contact" data-service-link="Carpentry — General project">Ask about carpentry <span aria-hidden="true">→</span></a>
+                <div class="service-card-links"><a href="services/carpentry.html">Explore carpentry</a><a href="#contact" data-service-link="Carpentry — General project">Request an estimate <span aria-hidden="true">→</span></a></div>
               </div>
             </article>
 
@@ -148,7 +171,7 @@
                   <li>Electrical</li>
                   <li>Flooring</li>
                 </ul>
-                <a href="#contact" data-service-link="Interior Renovations — General project">Ask about interior renovations <span aria-hidden="true">→</span></a>
+                <div class="service-card-links"><a href="services/interior-renovations.html">Explore renovations</a><a href="#contact" data-service-link="Interior Renovations — General project">Request an estimate <span aria-hidden="true">→</span></a></div>
               </div>
             </article>
           </div>
@@ -197,6 +220,21 @@
         </div>
       </section>
 
+      <section class="section trust-section" aria-labelledby="trust-title">
+        <div class="shell">
+          <div class="section-heading trust-heading">
+            <div><p class="eyebrow dark">What to expect</p><h2 id="trust-title">Straightforward service, backed by real work.</h2></div>
+            <p>From the first conversation to the finished space, the focus stays on clear communication, careful workmanship, and respect for your property.</p>
+          </div>
+          <div class="trust-grid">
+            <article><span>01</span><h3>Real project photography</h3><p>The work shown throughout this website comes from MFCI projects.</p></article>
+            <article><span>02</span><h3>Multi-trade experience</h3><p>One team can coordinate a practical mix of interior and exterior services.</p></article>
+            <article><span>03</span><h3>Clear project conversations</h3><p>Scope, priorities, timing, and next steps begin with a direct discussion.</p></article>
+            <article><span>04</span><h3>GTA and Muskoka service</h3><p>Projects are considered across Rosseau, the Muskoka area, and the GTA.</p></article>
+          </div>
+        </div>
+      </section>
+
       <section id="work" class="section work-section">
         <div class="shell">
           <div class="section-heading work-heading">
@@ -224,6 +262,7 @@
               <figcaption>Decks</figcaption>
             </figure>
           </div>
+          <div class="work-actions"><a class="button gallery-toggle" href="projects.html">Explore featured project stories</a></div>
         </div>
       </section>
 
@@ -674,7 +713,7 @@
             <p class="eyebrow">Start a project</p>
             <h2>Tell us what you need.</h2>
             <p>
-              Send the basics and your email app will open a ready-to-send estimate request. Photos and documents can be attached before sending. We serve Rosseau, Muskoka, and the GTA.
+              Send the basics directly to our team and include up to three project photos. We serve Rosseau, Muskoka, and the GTA.
             </p>
             <div class="contact-methods">
               <a href="tel:+16472134236"><span>Matt — call or text</span><strong>647-213-4236</strong></a>
@@ -684,6 +723,7 @@
           </div>
 
           <form class="estimate-form" id="estimate-form">
+            <label class="form-honeypot" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off" /></label>
             <div class="form-row">
               <label>Full name<input name="name" autocomplete="name" required /></label>
               <label>Phone number<input name="phone" autocomplete="tel" inputmode="tel" required /></label>
@@ -723,8 +763,16 @@
               Project details
               <textarea name="details" rows="5" required placeholder="What would you like done? Include timing, size, or any important details."></textarea>
             </label>
-            <button class="button button-primary form-button" type="submit">Prepare email request</button>
-            <p class="form-note" id="form-note">This form does not store your information on the website.</p>
+            <label>
+              Project photos <span class="optional">(optional, up to 3)</span>
+              <input name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple />
+            </label>
+            <label class="form-consent">
+              <input name="consent" type="checkbox" required />
+              <span>I agree that MFCI may use these details and photos to respond to my request.</span>
+            </label>
+            <button class="button button-primary form-button" type="submit">Send estimate request</button>
+            <p class="form-note" id="form-note" role="status" aria-live="polite">Your request will be delivered securely to the MFCI owner workspace.</p>
           </form>
         </div>
       </section>
@@ -738,10 +786,10 @@
         </div>
         <div>
           <p class="footer-label">Services</p>
-          <a href="#services">Green cleaning</a>
-          <a href="#services">Stone Masonry and Hardscape</a>
-          <a href="#services">Carpentry</a>
-          <a href="#services">Interior Renovations</a>
+          <a href="services/green-cleaning.html">Green cleaning</a>
+          <a href="services/stone-masonry-hardscape.html">Stone Masonry and Hardscape</a>
+          <a href="services/carpentry.html">Carpentry</a>
+          <a href="services/interior-renovations.html">Interior Renovations</a>
         </div>
         <div>
           <p class="footer-label">Contact</p>
@@ -753,7 +801,7 @@
       </div>
       <div class="shell footer-bottom">
         <span>© <span id="year"></span> M. Foote's Contracting Inc.</span>
-        <span>Original MFCI identity, rebuilt for MK Enterprise.</span>
+        <span><a href="privacy.html">Privacy</a> · Original MFCI identity, rebuilt for MK Enterprise.</span>
       </div>
     </footer>
   </body>
