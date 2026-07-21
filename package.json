@@ -5,7 +5,10 @@
   "description": "MFCI Command Center phone-first business operations app",
   "scripts": {
     "serve": "firebase emulators:start --only hosting,database",
-    "deploy": "firebase deploy --only hosting,database"
+    "deploy": "firebase deploy --only hosting,database",
+    "deploy:app": "firebase deploy --only hosting:app",
+    "deploy:public": "firebase deploy --only hosting:public",
+    "deploy:rules": "firebase deploy --only database"
   },
   "devDependencies": {
     "firebase-tools": "^14.23.0"

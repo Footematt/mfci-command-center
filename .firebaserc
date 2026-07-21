@@ -1,5 +1,17 @@
 {
   "projects": {
     "default": "mfci-command-center"
+  },
+  "targets": {
+    "mfci-command-center": {
+      "hosting": {
+        "app": [
+          "mfci-command-center"
+        ],
+        "public": [
+          "mkenterprise-public"
+        ]
+      }
+    }
   }
 }
