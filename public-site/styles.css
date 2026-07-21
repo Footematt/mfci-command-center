@@ -226,7 +226,11 @@ h1 { max-width: 800px; margin-bottom: 24px; font-size: clamp(3.4rem, 7.8vw, 7.3r
 
 @media (max-width: 620px) {
   :root { --shell: min(100% - 28px, 1180px); }
-  .brand strong { font-size: 1rem; }
+  .header-inner { gap: 10px; }
+  .brand { min-width: 0; gap: 8px; }
+  .brand img { width: 60px; height: 44px; }
+  .brand strong { font-size: .88rem; white-space: nowrap; }
+  .menu-toggle { flex: 0 0 46px; }
   .hero { min-height: 710px; background-position: 62% center; }
   .hero-content { padding-top: 72px; }
   h1 { font-size: clamp(3.15rem, 16vw, 4.7rem); }
@@ -245,6 +249,8 @@ h1 { max-width: 800px; margin-bottom: 24px; font-size: clamp(3.4rem, 7.8vw, 7.3r
   .work-grid { display: grid; grid-template-columns: 1fr; grid-template-rows: none; }
   .work-grid .work-main { grid-column: auto; }
   .work-grid figure { height: 270px; }
+  .gallery-filters { display: grid; grid-template-columns: 1fr; }
+  .gallery-filter { width: 100%; white-space: normal; }
   .project-gallery-grid { grid-template-columns: 1fr; gap: 16px; }
   .project-gallery-item figcaption { min-height: 0; }
   .estimate-form { padding: 26px 20px; }
