@@ -98,6 +98,8 @@ h1 { max-width: 800px; margin-bottom: 24px; font-size: clamp(3.4rem, 7.8vw, 7.3r
 .service-number { position: absolute; top: 25px; right: 28px; color: #9da9a3; font-size: .74rem; font-weight: 800; letter-spacing: .12em; }
 .service-card h3 { margin-bottom: 16px; font-size: 2rem; font-weight: 500; }
 .service-card p { margin: 0 0 26px; color: #5c6863; }
+.service-subcategories { display: flex; flex-wrap: wrap; gap: 8px; margin: -8px 0 24px; padding: 0; list-style: none; }
+.service-subcategories li { padding: 7px 10px; color: var(--forest); background: #edf2ec; border-radius: 999px; font-size: .78rem; font-weight: 800; }
 .service-card a, .text-link { color: var(--forest); font-size: .88rem; font-weight: 800; text-decoration: none; border-bottom: 1px solid rgba(23,62,50,.28); }
 .service-card a:hover, .text-link:hover { border-color: var(--forest); }
 .more-services {
